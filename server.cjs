@@ -6,6 +6,7 @@ const { spawn } = require('child_process');
 const root = __dirname;
 const rootPath = path.resolve(root);
 const port = Number(process.env.PORT || 5173);
+const host = process.env.HOST || '127.0.0.1';
 const MAX_AI_PAYLOAD_BYTES = 600_000;
 const MAX_URL_LENGTH = 2048;
 const API_RATE_LIMIT_WINDOW_MS = 60_000;
@@ -131,8 +132,8 @@ const server = http.createServer((request, response) => {
 server.headersTimeout = 10_000;
 server.requestTimeout = 30_000;
 server.keepAliveTimeout = 5_000;
-server.listen(port, '127.0.0.1', () => {
-  console.log(`WatchNations running at http://127.0.0.1:${port}`);
+server.listen(port, host, () => {
+  console.log(`WatchNations running at http://${host}:${port}`);
 });
 
 function allowApiRequest(request, response) {
