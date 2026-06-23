@@ -27,7 +27,10 @@ const types = {
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.geojson': 'application/geo+json; charset=utf-8',
-  '.png': 'image/png'
+  '.png': 'image/png',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8'
 };
 
 const server = http.createServer((request, response) => {
@@ -178,6 +181,7 @@ function allowApiRequest(request, response) {
 
 function isAllowedStaticPath(filePath) {
   if (filePath === path.join(rootPath, 'index.html')) return true;
+  if (['robots.txt', 'sitemap.xml', 'site.webmanifest'].some((file) => filePath === path.join(rootPath, file))) return true;
   const relative = path.relative(rootPath, filePath);
   const [topLevel] = relative.split(path.sep);
   return ['src', 'data', 'assets'].includes(topLevel);
@@ -187,6 +191,7 @@ function staticCacheControl(filePath) {
   const relative = path.relative(rootPath, filePath);
   const [topLevel] = relative.split(path.sep);
   if (topLevel === 'data' || topLevel === 'assets') return 'public, max-age=86400';
+  if (['robots.txt', 'sitemap.xml', 'site.webmanifest'].includes(relative)) return 'public, max-age=3600';
   if (topLevel === 'src') return 'no-cache';
   return 'no-store';
 }
@@ -495,7 +500,7 @@ function setSecurityHeaders(response) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net",
+      "script-src 'self' 'sha256-CAvPzJ8HBILrOTLQmAXjHvfwbTCxSALrZcX6ihYfmVA=' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net",
       "style-src 'self' 'unsafe-inline' https://vjs.zencdn.net",
       "img-src 'self' https: data:",
       "connect-src 'self' https: http:",
