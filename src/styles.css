@@ -55,6 +55,8 @@ svg {
 }
 
 .topbar {
+  position: sticky;
+  top: 0;
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
@@ -63,7 +65,7 @@ svg {
   padding: 0 28px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(31, 32, 35, 0.98);
-  z-index: 10;
+  z-index: 30;
 }
 
 .brand {

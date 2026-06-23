@@ -582,7 +582,7 @@ document.getElementById('zoomInButton').addEventListener('click', () => setGlobe
 document.getElementById('zoomOutButton').addEventListener('click', () => setGlobeZoom(appState.globeZoom - 0.18));
 document.getElementById('zoomResetButton').addEventListener('click', () => setGlobeZoom(1));
 document.getElementById('randomButton').addEventListener('click', selectRandomCountry);
-document.getElementById('openPanelHint').addEventListener('click', () => document.getElementById('countryPanel').scrollIntoView({ behavior: 'smooth' }));
+document.getElementById('openPanelHint').addEventListener('click', revealCountryPanelIfStacked);
 document.getElementById('radioMode').addEventListener('click', () => setMediaMode('radio'));
 document.getElementById('tvMode').addEventListener('click', () => setMediaMode('tv'));
 makePlayerPanelDraggable();
@@ -1968,7 +1968,7 @@ async function pickCountryFromGlobe(event, context) {
   }
 
   await selectCountryByCode(code, { fromGlobe: true, source: 'globe' });
-  document.getElementById('countryPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  revealCountryPanelIfStacked();
 }
 
 async function pickCountryAtCenter(context) {
@@ -1979,7 +1979,12 @@ async function pickCountryAtCenter(context) {
   }
 
   await selectCountryByCode(code, { fromGlobe: true, source: 'center-reticle' });
-  document.getElementById('countryPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  revealCountryPanelIfStacked();
+}
+
+function revealCountryPanelIfStacked() {
+  if (!window.matchMedia('(max-width: 760px)').matches) return;
+  document.getElementById('countryPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function updateCenterTarget(context) {

@@ -206,7 +206,9 @@ function readJson(request) {
 function runPythonAI(payload) {
   return new Promise((resolve, reject) => {
     const script = path.join(root, 'ai_engine.py');
-    const child = spawn('py', ['-3', script], { stdio: ['pipe', 'pipe', 'pipe'] });
+    const command = process.platform === 'win32' ? 'py' : 'python3';
+    const args = process.platform === 'win32' ? ['-3', script] : [script];
+    const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'] });
     let output = '';
     let error = '';
     const timeout = setTimeout(() => {
