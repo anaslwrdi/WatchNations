@@ -1,2 +1,16 @@
-# WatchNations
-WatchNations project
+# 🌍 WatchNations
+
+منصة لمشاهدة المباريات والأحداث الرياضية.
+
+## 🚀 الميزات
+- ⚽ مشاهدة مباشرة
+- 📊 إحصائيات لحظية
+- 🔔 تنبيهات المباريات
+
+## 📂 هيكل المشروع
+```
+README.md
+index.html
+script.js
+style.css
+```
