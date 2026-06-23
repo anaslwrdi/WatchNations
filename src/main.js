@@ -4,7 +4,7 @@ let DateTime;
 
 const API_BASE = 'https://iptv-org.github.io/api';
 const IPTV_BASE = 'https://iptv-org.github.io/iptv';
-const WORLD_GEOJSON = '/data/countries.json';
+const WORLD_GEOJSON = '/data/countries-lite.json';
 
 const palette = ['#1eb6d9', '#e7c51e', '#3daf58', '#d84d77', '#f2643f', '#9b58b4', '#42c7bb'];
 const channelCache = new Map();
@@ -328,7 +328,7 @@ document.getElementById('root').innerHTML = `
       <div class="globe-status" id="globeStatus"><strong>Ready</strong><span>Move the globe until a country is inside the red circle</span></div>
       <div class="hero-card">
         <span>${icons.bolt} Fast mode</span>
-        <strong id="heroCountry">Morocco</strong>
+        <strong id="heroCountry">Choose from the globe</strong>
         <small>Move the globe, place a country in the red circle, then click.</small>
       </div>
       <button class="hint" id="openPanelHint"><span>Choose a country</span>${icons.arrow}</button>
@@ -350,6 +350,7 @@ document.getElementById('root').innerHTML = `
         <section class="player-panel" id="playerPanel">
           <div class="player-head">
             <strong id="playerTitle">Select a channel</strong>
+            <button class="mini-text-button" id="pipPlayerButton" title="Picture in picture">PiP</button>
             <button class="mini-button" id="closePlayerButton" title="Close player">${icons.close}</button>
           </div>
           <video id="livePlayer" class="video-js vjs-default-skin" controls preload="none" playsinline></video>
@@ -358,7 +359,6 @@ document.getElementById('root').innerHTML = `
         <div class="channels-head">
           <div><h2 id="mediaTitle">Free Channels</h2><small id="aiInsight">Smart filter is ready</small></div>
           <div class="channels-tools">
-            <button class="mini-text-button" id="allIptvButton" title="Load every playable IPTV-org stream">All IPTV-org</button>
             <span id="channelCount">0</span>
           </div>
         </div>
@@ -564,7 +564,7 @@ const channelSearch = document.getElementById('channelSearch');
 const countryPanel = document.getElementById('countryPanel');
 const changeCountryButton = document.getElementById('changeCountryButton');
 const closePlayerButton = document.getElementById('closePlayerButton');
-const allIptvButton = document.getElementById('allIptvButton');
+const pipPlayerButton = document.getElementById('pipPlayerButton');
 const aboutModal = document.getElementById('aboutModal');
 const aboutCloseButton = document.getElementById('aboutCloseButton');
 const privacyModal = document.getElementById('privacyModal');
@@ -585,12 +585,13 @@ document.getElementById('randomButton').addEventListener('click', selectRandomCo
 document.getElementById('openPanelHint').addEventListener('click', () => document.getElementById('countryPanel').scrollIntoView({ behavior: 'smooth' }));
 document.getElementById('radioMode').addEventListener('click', () => setMediaMode('radio'));
 document.getElementById('tvMode').addEventListener('click', () => setMediaMode('tv'));
+makePlayerPanelDraggable();
 changeCountryButton.addEventListener('click', () => {
   countryPanel.classList.remove('channels-only');
   countrySearch.focus();
 });
 closePlayerButton.addEventListener('click', closePlayer);
-allIptvButton.addEventListener('click', loadAllIptvChannels);
+pipPlayerButton.addEventListener('click', requestPlayerPictureInPicture);
 aboutCloseButton.addEventListener('click', closeAboutModal);
 aboutModal.addEventListener('click', (event) => {
   if (event.target.closest('[data-close-about]')) closeAboutModal();
@@ -641,8 +642,11 @@ leftNav.addEventListener('click', (event) => {
       document.getElementById('heroCountry').textContent = 'Favorites';
       document.getElementById('mediaTitle').textContent = appState.mediaMode === 'radio' ? 'Favorite Radio' : 'Favorite Channels';
     }
-    if (appState.mediaMode === 'tv' && link.dataset.category === 'all' && !appState.currentChannels.length) {
-      loadAllIptvChannels();
+    if (link.dataset.category !== 'favorites' && !appState.currentChannels.length && !appState.selectedCountry) {
+      document.getElementById('countryTitle').textContent = 'Select a Country';
+      document.getElementById('aiInsight').textContent = 'Choose a country first, then filter by category';
+      document.getElementById('channelGrid').innerHTML = '<p class="muted">Choose a country from the globe or country list to browse this category.</p>';
+      document.getElementById('channelCount').textContent = '0';
       return;
     }
     renderChannels();
@@ -693,7 +697,6 @@ async function initGlobe() {
     THREE = threeModule;
     mount.innerHTML = '';
     createGlobe();
-    focusCountry(appState.selectedCountry?.code || 'MA');
   } catch (error) {
     mount.innerHTML = `<div class="globe-loading error-state"><span>${brandLogo}</span><strong>Globe could not load</strong></div>`;
   }
@@ -701,6 +704,7 @@ async function initGlobe() {
 
 async function loadGlobeModules() {
   const sources = [
+    '/assets/vendor/three.module.js',
     'https://esm.sh/three@0.165.0',
     'https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js'
   ];
@@ -746,7 +750,6 @@ async function loadCountries() {
       document.getElementById('aiInsight').textContent = 'Click a country on the globe to load channels';
       document.getElementById('channelGrid').innerHTML = '<p class="muted">Channels will appear here after you choose a country from the globe.</p>';
     }
-    if (appState.globe) focusCountry('MA');
   } catch (error) {
     document.getElementById('countryList').innerHTML =
       '<p class="error">Could not load countries. Check the internet connection and reload.</p>';
@@ -833,7 +836,6 @@ function updateMediaLabels() {
   document.getElementById('mediaTitle').textContent = isRadio ? 'Free Radio' : 'Free Channels';
   document.getElementById('playerTitle').textContent = isRadio ? 'Select a radio station' : 'Select a channel';
   channelSearch.placeholder = isRadio ? 'Search stations, language, or tag' : 'Search channels or category';
-  allIptvButton.hidden = isRadio;
 }
 
 async function loadCountryMedia(code) {
@@ -858,7 +860,7 @@ async function selectCountryByCode(rawCode, options = {}) {
   const code = normalizeCountryCode(rawCode);
   debugCountrySelection(rawCode, code, options.source || 'unknown');
   if (!isAvailableCountryCode(code)) {
-    showToast('This country is not available in IPTV-org.');
+    showToast('This country is not available yet.');
     return;
   }
 
@@ -921,7 +923,7 @@ async function mergeIptvApiChannels(country) {
   channelCache.set(code, merged);
   safeSessionSet(`watchnations:${CHANNEL_CACHE_VERSION}:m3u:${code}`, merged);
   setGlobeStatus(country.name, `${country.flag || flag(code)} ${merged.length} channels available`);
-  appState.aiInsight = `IPTV-org API merged ${merged.length} streams for this country`;
+  appState.aiInsight = `${merged.length} streams available for this country`;
   appState.aiChannels = null;
   renderChannels();
   requestPythonAI();
@@ -964,7 +966,7 @@ async function loadApiChannelsForCountry(code) {
 
 async function loadAllIptvChannels() {
   if (appState.mediaMode === 'radio') {
-    showToast('All IPTV-org is available in TV mode.');
+    showToast('Global TV is available in TV mode.');
     return;
   }
   appState.globalMode = true;
@@ -976,24 +978,24 @@ async function loadAllIptvChannels() {
   appState.renderLimit = 700;
   channelSearch.value = '';
   countryPanel.classList.add('channels-only');
-  document.getElementById('countryTitle').textContent = 'All IPTV-org';
-  document.getElementById('heroCountry').textContent = 'All IPTV-org';
+  document.getElementById('countryTitle').textContent = 'All Channels';
+  document.getElementById('heroCountry').textContent = 'All Channels';
   document.getElementById('channelCount').textContent = '...';
-  document.getElementById('aiInsight').textContent = 'Loading every playable IPTV-org stream';
+  document.getElementById('aiInsight').textContent = 'Loading playable global streams';
   document.getElementById('channelGrid').innerHTML = skeletonCards();
-  setGlobeStatus('All IPTV-org', 'Loading the global stream index');
+  setGlobeStatus('All Channels', 'Loading the global stream index');
 
   try {
     appState.currentChannels = await loadGlobalIptvChannels();
-    appState.aiInsight = `Loaded ${appState.currentChannels.length} playable IPTV-org streams`;
-    setGlobeStatus('All IPTV-org', `${appState.currentChannels.length} playable streams loaded`);
+    appState.aiInsight = `Loaded ${appState.currentChannels.length} playable streams`;
+    setGlobeStatus('All Channels', `${appState.currentChannels.length} playable streams loaded`);
     renderCountries();
     renderChannels();
   } catch (error) {
     appState.currentChannels = [];
     document.getElementById('channelCount').textContent = '0';
-    document.getElementById('aiInsight').textContent = 'Could not load the global IPTV-org index';
-    document.getElementById('channelGrid').innerHTML = '<p class="muted">The IPTV-org global index could not be loaded right now.</p>';
+    document.getElementById('aiInsight').textContent = 'Could not load the global channel index';
+    document.getElementById('channelGrid').innerHTML = '<p class="muted">The global channel index could not be loaded right now.</p>';
   }
 }
 
@@ -1192,7 +1194,7 @@ function smartRankCountries(countries, query) {
 function renderChannels() {
   const grid = document.getElementById('channelGrid');
   syncFavoriteMetadata(appState.currentChannels);
-  const channels = appState.aiChannels || smartFilterChannels(appState.currentChannels);
+  const channels = smartFilterChannels(appState.aiChannels || appState.currentChannels);
 
   document.getElementById('channelCount').textContent = channels.length;
   document.getElementById('aiInsight').textContent = appState.aiInsight || getInsight(channels);
@@ -1271,8 +1273,17 @@ function channelMeta(channel) {
 
 function channelLogoMarkup(channel) {
   const countryCode = channel.country || appState.selectedCountry?.code || '';
-  const fallbackFlag = escapeHtml(flag(countryCode));
-  return `<span class="channel-logo show-fallback"><span class="logo-fallback">${fallbackFlag}</span></span>`;
+  const imageUrl = flagImageUrl(countryCode);
+  const fallbackFlag = escapeHtml(flag(countryCode) || normalizeCountryCode(countryCode) || 'WN');
+  if (!imageUrl) {
+    return `<span class="channel-logo show-fallback"><span class="logo-fallback">${fallbackFlag}</span></span>`;
+  }
+  return `
+    <span class="channel-logo">
+      <img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />
+      <span class="logo-fallback">${fallbackFlag}</span>
+    </span>
+  `;
 }
 
 function renderMoreChannelsButton(total) {
@@ -1318,7 +1329,7 @@ function smartFilterChannels(channels) {
 function requestPythonAI() {
   clearTimeout(requestPythonAI.timer);
   requestPythonAI.timer = setTimeout(async () => {
-    if (!appState.currentChannels.length) return;
+    if (!appState.currentChannels.length || normalize(appState.channelQuery).length < 2) return;
 
     try {
       const response = await fetch('/api/ai/rank', {
@@ -1333,13 +1344,13 @@ function requestPythonAI() {
       if (!result.channels?.length) return;
       appState.aiChannels = result.channels.map(sanitizeChannel).filter((channel) => channel.url);
       appState.aiInsight = appState.mediaMode === 'radio'
-        ? (result.insight || 'Python AI ranked stations').replaceAll('channels', 'stations').replaceAll('streams', 'stations')
-        : (result.insight || 'Python AI ranked channels');
+        ? `${appState.aiChannels.length} matching stations`
+        : `${appState.aiChannels.length} matching channels`;
       renderChannels();
     } catch (error) {
       appState.aiInsight = '';
     }
-  }, 240);
+  }, 520);
 }
 
 function sanitizeChannel(channel) {
@@ -1409,13 +1420,13 @@ function countryFromGeoFeature(feature, code) {
 
 function getInsight(channels) {
   if (appState.selectedCategory === 'favorites') return `${channels.length} favorite ${appState.mediaMode === 'radio' ? 'stations' : 'channels'} saved`;
-  if (appState.globalMode) return appState.aiInsight || `Global IPTV-org index: ${channels.length} streams`;
+  if (appState.globalMode) return appState.aiInsight || `Global channel index: ${channels.length} streams`;
   if (!appState.currentChannels.length) return appState.mediaMode === 'radio' ? 'Choose a country to load radio stations' : 'Choose a country to load channels';
   if (appState.channelQuery) return `AI filter ranked ${channels.length} matching channels`;
   const groups = new Set(channels.map((channel) => channel.group).filter(Boolean));
   return appState.mediaMode === 'radio'
-    ? `Radio Browser: ${channels.length} stations across ${groups.size || 1} groups`
-    : `AI summary: ${channels.length} streams across ${groups.size || 1} groups`;
+    ? `${channels.length} stations across ${groups.size || 1} groups`
+    : `${channels.length} streams across ${groups.size || 1} groups`;
 }
 
 function getRenderedChannel(index) {
@@ -1520,7 +1531,7 @@ async function playChannel(rawUrl, rawTitle = 'Live TV', options = {}) {
         controls: true,
         fluid: true,
         liveui: true,
-        preload: 'auto',
+        preload: 'metadata',
         responsive: true
       });
     }
@@ -1571,6 +1582,76 @@ function closePlayer() {
   document.getElementById('playerTitle').textContent = appState.mediaMode === 'radio' ? 'Select a radio station' : 'Select a channel';
   if (appState.player) appState.player.pause();
   document.getElementById('radioPlayer').pause();
+}
+
+function makePlayerPanelDraggable() {
+  const panel = document.getElementById('playerPanel');
+  const head = panel?.querySelector('.player-head');
+  if (!panel || !head) return;
+
+  let dragging = false;
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+
+  head.addEventListener('pointerdown', (event) => {
+    if (event.target.closest('button')) return;
+    dragging = true;
+    const rect = panel.getBoundingClientRect();
+    startX = event.clientX;
+    startY = event.clientY;
+    startLeft = rect.left;
+    startTop = rect.top;
+    panel.classList.add('dragging');
+    panel.style.left = `${rect.left}px`;
+    panel.style.top = `${rect.top}px`;
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    head.setPointerCapture?.(event.pointerId);
+  });
+
+  head.addEventListener('pointermove', (event) => {
+    if (!dragging) return;
+    const rect = panel.getBoundingClientRect();
+    const maxLeft = Math.max(8, window.innerWidth - rect.width - 8);
+    const maxTop = Math.max(8, window.innerHeight - rect.height - 8);
+    const left = Math.min(maxLeft, Math.max(8, startLeft + event.clientX - startX));
+    const top = Math.min(maxTop, Math.max(8, startTop + event.clientY - startY));
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+  });
+
+  const stopDragging = (event) => {
+    if (!dragging) return;
+    dragging = false;
+    panel.classList.remove('dragging');
+    head.releasePointerCapture?.(event.pointerId);
+  };
+  head.addEventListener('pointerup', stopDragging);
+  head.addEventListener('pointercancel', stopDragging);
+}
+
+async function requestPlayerPictureInPicture() {
+  const video = document.querySelector('#livePlayer video') || document.getElementById('livePlayer');
+  if (!video || document.getElementById('playerPanel').classList.contains('radio-player')) {
+    showToast('Picture in picture is available for TV streams.');
+    return;
+  }
+
+  try {
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+      return;
+    }
+    if (!document.pictureInPictureEnabled || typeof video.requestPictureInPicture !== 'function') {
+      showToast('Your browser does not support picture in picture.');
+      return;
+    }
+    await video.requestPictureInPicture();
+  } catch (error) {
+    showToast('Start the video first, then try PiP.');
+  }
 }
 
 function streamType(url) {
@@ -1718,12 +1799,12 @@ function createGlobe() {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !appState.performanceMode, powerPreference: 'high-performance' });
   const globeGroup = new THREE.Group();
   const textureCanvas = document.createElement('canvas');
-  const rotation = new THREE.Vector2(0.55, -1.45);
+  const rotation = new THREE.Vector2(0, 1.05);
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
 
-  textureCanvas.width = appState.performanceMode ? 832 : 1280;
-  textureCanvas.height = appState.performanceMode ? 416 : 640;
+  textureCanvas.width = appState.performanceMode ? 720 : 1024;
+  textureCanvas.height = appState.performanceMode ? 360 : 512;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, appState.performanceMode ? 1.5 : 2));
   renderer.setSize(mount.clientWidth, mount.clientHeight);
   mount.appendChild(renderer.domElement);
@@ -1741,7 +1822,7 @@ function createGlobe() {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), appState.performanceMode ? 4 : 8);
   const globe = new THREE.Mesh(
-    new THREE.SphereGeometry(1.62, appState.performanceMode ? 64 : 96, appState.performanceMode ? 64 : 96),
+    new THREE.SphereGeometry(1.62, appState.performanceMode ? 48 : 72, appState.performanceMode ? 48 : 72),
     new THREE.MeshBasicMaterial({ map: texture })
   );
   globeGroup.add(globe);
@@ -1756,8 +1837,8 @@ function createGlobe() {
   appState.globe = { textureCanvas, texture, rotation, renderer, camera, mount, globe, globeGroup, raycaster, pointer, featureByCode: new Map() };
   exposeLocalGlobeDebug();
   applyGlobeZoom();
-  drawFastTexture(ctxFromCanvas(textureCanvas), textureCanvas, texture);
-  drawWorldTexture(appState.selectedCountry?.code || 'MA');
+  drawLoadingTexture(ctxFromCanvas(textureCanvas), textureCanvas, texture);
+  drawWorldTexture('');
 
   let pointerDown = false;
   let lastX = 0;
@@ -2154,13 +2235,15 @@ function pointInRing(lon, lat, ring) {
 }
 
 function drawFallbackTexture(ctx, canvas) {
-  const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  gradient.addColorStop(0, '#13b6de');
-  gradient.addColorStop(0.4, '#ffcf25');
-  gradient.addColorStop(0.7, '#f04e80');
-  gradient.addColorStop(1, '#40b957');
-  ctx.fillStyle = gradient;
+  ctx.fillStyle = '#010407';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'rgba(255, 8, 0, 0.16)';
+  for (let y = 0; y < canvas.height; y += canvas.height / 8) {
+    ctx.fillRect(0, y, canvas.width, 1);
+  }
+  for (let x = 0; x < canvas.width; x += canvas.width / 12) {
+    ctx.fillRect(x, 0, 1, canvas.height);
+  }
 }
 
 function drawGeoFeature(ctx, feature, canvas) {
@@ -2313,22 +2396,28 @@ function pointInsideCountryCode(lon, lat, code) {
   return appState.geojson.features.some((feature) => getFeatureCountryCode(feature) === code && pointInFeature(lon, lat, feature));
 }
 
-function drawFastTexture(ctx, canvas, texture) {
+function drawLoadingTexture(ctx, canvas, texture) {
   ctx.fillStyle = '#010407';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  const bands = [
-    ['#1eb6d9', 0.18, 0.32, 0.3, 0.18],
-    ['#e7c51e', 0.42, 0.28, 0.18, 0.16],
-    ['#3daf58', 0.54, 0.55, 0.2, 0.24],
-    ['#d84d77', 0.7, 0.35, 0.18, 0.18],
-    ['#42c7bb', 0.23, 0.6, 0.16, 0.18]
-  ];
-  bands.forEach(([color, x, y, width, height]) => {
-    ctx.fillStyle = color;
+  const glow = ctx.createRadialGradient(canvas.width * 0.5, canvas.height * 0.5, 0, canvas.width * 0.5, canvas.height * 0.5, canvas.width * 0.5);
+  glow.addColorStop(0, 'rgba(255, 8, 0, 0.2)');
+  glow.addColorStop(1, 'rgba(255, 8, 0, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.lineWidth = 1;
+  for (let y = canvas.height / 8; y < canvas.height; y += canvas.height / 8) {
     ctx.beginPath();
-    ctx.ellipse(canvas.width * x, canvas.height * y, canvas.width * width, canvas.height * height, -0.35, 0, Math.PI * 2);
-    ctx.fill();
-  });
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+  for (let x = canvas.width / 12; x < canvas.width; x += canvas.width / 12) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
   texture.needsUpdate = true;
 }
 

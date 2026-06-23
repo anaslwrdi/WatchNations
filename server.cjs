@@ -123,7 +123,7 @@ const server = http.createServer((request, response) => {
 
       response.writeHead(200, {
         'Content-Type': types[path.extname(filePath)],
-        'Cache-Control': 'no-store'
+        'Cache-Control': staticCacheControl(filePath)
       });
       response.end(request.method === 'HEAD' ? undefined : data);
     });
@@ -171,6 +171,14 @@ function isAllowedStaticPath(filePath) {
   const relative = path.relative(rootPath, filePath);
   const [topLevel] = relative.split(path.sep);
   return ['src', 'data', 'assets'].includes(topLevel);
+}
+
+function staticCacheControl(filePath) {
+  const relative = path.relative(rootPath, filePath);
+  const [topLevel] = relative.split(path.sep);
+  if (topLevel === 'data' || topLevel === 'assets') return 'public, max-age=86400';
+  if (topLevel === 'src') return 'no-cache';
+  return 'no-store';
 }
 
 function readJson(request) {
