@@ -17,7 +17,10 @@ const RADIO_BROWSER_HOSTS = [
   'https://nl1.api.radio-browser.info',
   'https://at1.api.radio-browser.info'
 ];
+const IPTV_API_BASE = 'https://iptv-org.github.io/api';
 const RADIO_USER_AGENT = 'WatchNations/1.0';
+const tvCategoryCache = new Map();
+const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -75,6 +78,13 @@ const server = http.createServer((request, response) => {
       handleRadioClick(url)
         .then((result) => sendJson(response, 200, result))
         .catch(() => sendJson(response, 502, { url: '', error: 'Radio click unavailable' }));
+      return;
+    }
+
+    if (request.method === 'GET' && url.pathname === '/api/tv/category') {
+      handleTvCategory(url)
+        .then((result) => sendJson(response, 200, result))
+        .catch(() => sendJson(response, 502, { channels: [], error: 'TV category unavailable' }));
       return;
     }
 
@@ -274,6 +284,90 @@ async function handleRadioClick(url) {
   return {
     url: safeUrl(result?.url),
     ok: Boolean(result?.ok)
+  };
+}
+
+async function handleTvCategory(url) {
+  const category = safeText(url.searchParams.get('category'), 40).toLowerCase() || 'all';
+  const allowed = new Set([
+    'all', 'top-news', 'news', 'music', 'sports', 'auto', 'animation', 'business', 'classic',
+    'comedy', 'cooking', 'culture', 'documentary', 'education', 'entertainment', 'family',
+    'general', 'kids', 'legislative', 'lifestyle', 'movies', 'outdoor', 'relax', 'religious',
+    'series', 'science', 'shop', 'travel', 'weather'
+  ]);
+  if (!allowed.has(category)) return { category, channels: [] };
+
+  const limit = Math.max(100, Math.min(3000, Number(url.searchParams.get('limit') || 1800)));
+  const cacheKey = `${category}:${limit}`;
+  const cached = tvCategoryCache.get(cacheKey);
+  if (cached && Date.now() - cached.createdAt < TV_CATEGORY_CACHE_MS) return cached.payload;
+
+  const [channels, streams] = await Promise.all([
+    fetchJson(`${IPTV_API_BASE}/channels.json`),
+    fetchJson(`${IPTV_API_BASE}/streams.json`)
+  ]);
+  const channelById = new Map(channels.map((channel) => [channel.id, channel]));
+  const output = [];
+
+  for (const stream of streams) {
+    const channelId = stream.channel || stream.channel_id || stream.channelId;
+    const channel = channelById.get(channelId);
+    if (!channel || !channelMatchesServerCategory(channel, category)) continue;
+    const item = sanitizeTvChannel(channel, stream);
+    if (!item.url) continue;
+    output.push(item);
+    if (output.length >= limit) break;
+  }
+
+  const payload = { category, channels: output };
+  tvCategoryCache.set(cacheKey, { createdAt: Date.now(), payload });
+  if (tvCategoryCache.size > 80) tvCategoryCache.delete(tvCategoryCache.keys().next().value);
+  return payload;
+}
+
+async function fetchJson(url) {
+  const response = await fetch(url, {
+    headers: { 'Accept': 'application/json' },
+    signal: AbortSignal.timeout(30_000)
+  });
+  if (!response.ok) throw new Error(`Fetch failed ${response.status}`);
+  return response.json();
+}
+
+function channelMatchesServerCategory(channel, category) {
+  if (category === 'all') return true;
+  const categories = Array.isArray(channel?.categories) ? channel.categories.map((item) => String(item).toLowerCase()) : [];
+  const mapped = category === 'top-news' ? 'news' : category;
+  if (categories.includes(mapped)) return true;
+  const haystack = `${channel?.name || ''} ${categories.join(' ')}`.toLowerCase();
+  const keywords = {
+    news: ['news', 'noticias', 'actualite', 'cnn', 'bbc', 'al jazeera', 'france 24'],
+    'top-news': ['news', 'breaking', 'headline', 'cnn', 'bbc', 'al jazeera', 'france 24'],
+    sports: ['sport', 'football', 'soccer', 'tennis', 'basketball', 'racing', 'f1'],
+    music: ['music', 'mtv', 'hits', 'pop', 'rock'],
+    movies: ['movie', 'film', 'cinema'],
+    kids: ['kids', 'children', 'cartoon', 'disney', 'baby'],
+    business: ['business', 'finance', 'economy', 'markets'],
+    weather: ['weather', 'meteo', 'forecast']
+  }[category] || [mapped];
+  return keywords.some((keyword) => haystack.includes(keyword));
+}
+
+function sanitizeTvChannel(channel, stream) {
+  const country = normalizeCountryCode(channel?.country || (Array.isArray(channel?.countries) ? channel.countries[0] : ''));
+  const categories = Array.isArray(channel?.categories) && channel.categories.length ? channel.categories.join(', ') : 'General';
+  const url = safeUrl(stream?.url);
+  return {
+    id: safeText(channel?.id, 120) || safeText(stream?.channel, 120),
+    name: safeText(channel?.name, 160) || 'Live TV',
+    url,
+    logo: '',
+    category: safeText(categories.split(',')[0] || 'general', 80).toLowerCase(),
+    sourceCategory: safeText(categories, 120),
+    group: safeText(categories, 80),
+    quality: safeText(stream?.quality, 32),
+    country,
+    type: 'tv'
   };
 }
 

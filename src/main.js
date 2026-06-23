@@ -269,6 +269,7 @@ const appState = {
   renderedChannels: [],
   aiChannels: null,
   aiInsight: '',
+  videoReadyPromise: null,
   favorites: new Set(safeParseJSON(localStorage.getItem('watchnations:favorites'), [])),
   favoriteChannels: new Map(safeParseJSON(localStorage.getItem('watchnations:favorite-channels'), []).map((channel) => [channel.url, channel])),
   geojson: null,
@@ -631,26 +632,11 @@ leftNav.addEventListener('click', (event) => {
   if (!link) return;
 
   if (link.dataset.category) {
-    appState.selectedCategory = link.dataset.category;
-    appState.aiChannels = null;
-    leftNav.classList.remove('open');
-    if (link.dataset.category === 'favorites') {
-      appState.globalMode = false;
-      appState.renderLimit = 700;
-      countryPanel.classList.add('channels-only');
-      document.getElementById('countryTitle').textContent = 'Favorites';
-      document.getElementById('heroCountry').textContent = 'Favorites';
-      document.getElementById('mediaTitle').textContent = appState.mediaMode === 'radio' ? 'Favorite Radio' : 'Favorite Channels';
-    }
-    if (link.dataset.category !== 'favorites' && !appState.currentChannels.length && !appState.selectedCountry) {
-      document.getElementById('countryTitle').textContent = 'Select a Country';
-      document.getElementById('aiInsight').textContent = 'Choose a country first, then filter by category';
-      document.getElementById('channelGrid').innerHTML = '<p class="muted">Choose a country from the globe or country list to browse this category.</p>';
+    handleCategoryNavigation(link.dataset.category).catch(() => {
       document.getElementById('channelCount').textContent = '0';
-      return;
-    }
-    renderChannels();
-    requestPythonAI();
+      document.getElementById('aiInsight').textContent = 'Could not load channels right now';
+      document.getElementById('channelGrid').innerHTML = '<p class="muted">Channels could not be loaded right now.</p>';
+    });
   }
   if (link.dataset.action === 'focus') {
     leftNav.classList.remove('open');
@@ -682,11 +668,86 @@ leftNav.addEventListener('click', (event) => {
   }
 });
 
+async function handleCategoryNavigation(categoryId) {
+  appState.selectedCategory = categoryId;
+  appState.aiChannels = null;
+  appState.channelQuery = '';
+  appState.renderLimit = 700;
+  channelSearch.value = '';
+  leftNav.classList.remove('open');
+
+  if (categoryId === 'favorites') {
+    appState.globalMode = false;
+    countryPanel.classList.add('channels-only');
+    document.getElementById('countryTitle').textContent = 'Favorites';
+    document.getElementById('heroCountry').textContent = 'Favorites';
+    document.getElementById('mediaTitle').textContent = appState.mediaMode === 'radio' ? 'Favorite Radio' : 'Favorite Channels';
+    renderChannels();
+    requestPythonAI();
+    return;
+  }
+
+  if (appState.mediaMode === 'radio') {
+    if (!appState.currentChannels.length && !appState.selectedCountry) {
+      document.getElementById('countryTitle').textContent = 'Select a Country';
+      document.getElementById('aiInsight').textContent = 'Choose a country first, then filter radio stations';
+      document.getElementById('channelGrid').innerHTML = '<p class="muted">Choose a country first to browse radio stations by category.</p>';
+      document.getElementById('channelCount').textContent = '0';
+      return;
+    }
+    renderChannels();
+    requestPythonAI();
+    return;
+  }
+
+  await loadGlobalCategory(categoryId);
+}
+
+async function loadGlobalCategory(categoryId) {
+  const label = categoryLabel(categoryId);
+  appState.globalMode = true;
+  appState.selectedCountry = null;
+  appState.currentChannels = [];
+  appState.aiChannels = null;
+  appState.aiInsight = '';
+  appState.renderLimit = categoryId === 'all' ? 700 : 1000;
+  countryPanel.classList.add('channels-only');
+  document.getElementById('countryTitle').textContent = label;
+  document.getElementById('heroCountry').textContent = label;
+  document.getElementById('channelCount').textContent = '...';
+  document.getElementById('aiInsight').textContent = categoryId === 'all'
+    ? 'Loading channels from all countries'
+    : `Loading ${label} channels from all countries`;
+  document.getElementById('channelGrid').innerHTML = skeletonCards();
+  setGlobeStatus(label, 'Loading channels from all countries');
+
+  try {
+    appState.currentChannels = await loadGlobalCategoryChannels(categoryId);
+    const filteredCount = smartFilterChannels(appState.currentChannels).length;
+    appState.aiInsight = categoryId === 'all'
+      ? `${filteredCount} channels from all countries`
+      : `${filteredCount} ${label} channels from all countries`;
+    setGlobeStatus(label, `${filteredCount} channels ready`);
+    renderCountries();
+    renderChannels();
+  } catch (error) {
+    appState.currentChannels = [];
+    document.getElementById('channelCount').textContent = '0';
+    document.getElementById('aiInsight').textContent = 'Could not load global channels right now';
+    document.getElementById('channelGrid').innerHTML = '<p class="muted">Global channels could not be loaded right now.</p>';
+  }
+}
+
+function categoryLabel(categoryId) {
+  return categories.find(([id]) => id === categoryId)?.[1] || 'Channels';
+}
+
 setInterval(updateClock, 1000);
 updateClock();
 updateMediaLabels();
 initGlobe();
 loadCountries();
+preloadVideoPlayerWhenIdle();
 
 async function initGlobe() {
   const mount = document.getElementById('globeStage');
@@ -1033,6 +1094,27 @@ async function loadGlobalIptvChannels() {
   return deduped;
 }
 
+async function loadGlobalCategoryChannels(categoryId) {
+  const cacheKey = `watchnations:${CHANNEL_CACHE_VERSION}:server-category:${categoryId}`;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) return safeParseJSON(cached, []);
+
+  try {
+    const response = await fetch(`/api/tv/category?category=${encodeURIComponent(categoryId)}&limit=3000`);
+    if (!response.ok) throw new Error(`Category ${categoryId} failed`);
+    const data = await response.json();
+    const channels = Array.isArray(data.channels) ? data.channels.map(sanitizeChannel).filter((channel) => channel.url) : [];
+    if (channels.length) {
+      safeSessionSet(cacheKey, channels);
+      return channels;
+    }
+  } catch (error) {
+    // Fall back to the browser-side index if the local API is temporarily unavailable.
+  }
+
+  return loadGlobalIptvChannels();
+}
+
 async function loadIptvApiIndex() {
   iptvApiIndexPromise ||= Promise.all([
     cachedJson(`${API_BASE}/channels.json`, 'api-channels'),
@@ -1147,7 +1229,7 @@ function renderCountries() {
       (country) => `
         <button data-code="${escapeHtml(country.code)}" class="${country.code === appState.selectedCountry?.code ? 'selected' : ''}">
           <span class="country-flag" aria-hidden="true">
-            <img src="${escapeHtml(flagImageUrl(country.code))}" alt="" loading="lazy" />
+            <img src="${escapeHtml(flagImageUrl(country.code, 80))}" srcset="${escapeHtml(flagSrcSet(country.code))}" alt="" loading="lazy" />
             <span class="country-flag-fallback">${escapeHtml(country.code)}</span>
           </span>
           <span>${escapeHtml(country.name)}</span>
@@ -1254,33 +1336,19 @@ function channelMeta(channel) {
   const parts = channel.type === 'radio'
     ? [country?.name || channel.country || '', channel.group || 'Radio', channel.quality || '']
     : [country?.name || channel.country || '', channel.group || 'General', channel.quality || ''];
-  return parts.filter(Boolean).join(' · ');
-
-  if (channel.type === 'radio') {
-    return [
-      country?.name || channel.country || '',
-      channel.group || 'Radio',
-      channel.quality || ''
-    ].filter(Boolean).join(' · ');
-  }
-
-  return [
-    country?.name || channel.country || '',
-    channel.group || 'General',
-    channel.quality || ''
-  ].filter(Boolean).join(' · ');
+  return parts.filter(Boolean).join(' - ');
 }
 
 function channelLogoMarkup(channel) {
   const countryCode = channel.country || appState.selectedCountry?.code || '';
-  const imageUrl = flagImageUrl(countryCode);
+  const imageUrl = flagImageUrl(countryCode, 160);
   const fallbackFlag = escapeHtml(flag(countryCode) || normalizeCountryCode(countryCode) || 'WN');
   if (!imageUrl) {
     return `<span class="channel-logo show-fallback"><span class="logo-fallback">${fallbackFlag}</span></span>`;
   }
   return `
     <span class="channel-logo">
-      <img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" />
+      <img src="${escapeHtml(imageUrl)}" srcset="${escapeHtml(flagSrcSet(countryCode))}" alt="" loading="lazy" decoding="async" />
       <span class="logo-fallback">${fallbackFlag}</span>
     </span>
   `;
@@ -1524,17 +1592,7 @@ async function playChannel(rawUrl, rawTitle = 'Live TV', options = {}) {
     document.getElementById('radioPlayer').pause();
     document.getElementById('radioPlayer').classList.remove('open');
     document.getElementById('livePlayer').classList.add('open');
-    await loadVideoJs();
-    if (!appState.player) {
-      appState.player = videojs('livePlayer', {
-        autoplay: false,
-        controls: true,
-        fluid: true,
-        liveui: true,
-        preload: 'metadata',
-        responsive: true
-      });
-    }
+    await ensureVideoPlayer();
 
     appState.player.src({ src: url, type: streamType(url) });
     const playResult = appState.player.play();
@@ -1683,6 +1741,42 @@ async function loadVideoJs() {
   videojs = window.videojs;
   if (!videojs) throw new Error('Video.js is unavailable');
   return videojs;
+}
+
+async function ensureVideoPlayer() {
+  await loadVideoJs();
+  if (!appState.player) {
+    appState.player = videojs('livePlayer', {
+      autoplay: false,
+      controls: true,
+      fluid: true,
+      html5: {
+        vhs: {
+          enableLowInitialPlaylist: true,
+          overrideNative: true
+        }
+      },
+      liveui: true,
+      preload: 'auto',
+      responsive: true
+    });
+  }
+  return appState.player;
+}
+
+function preloadVideoPlayerWhenIdle() {
+  const warm = () => {
+    if (appState.videoReadyPromise || appState.performanceMode) return;
+    appState.videoReadyPromise = ensureVideoPlayer().catch(() => {
+      appState.videoReadyPromise = null;
+    });
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(warm, { timeout: 4000 });
+  } else {
+    setTimeout(warm, 2600);
+  }
 }
 
 function loadStylesheetOnce(id, href) {
@@ -2560,10 +2654,21 @@ function flag(code) {
     .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt()));
 }
 
-function flagImageUrl(code) {
+function flagImageUrl(code, width = 160) {
   code = normalizeCountryCode(code).toLowerCase();
   if (!/^[a-z]{2}$/.test(code)) return '';
-  return `https://flagcdn.com/w40/${code}.png`;
+  const safeWidth = [40, 80, 120, 160, 320].includes(Number(width)) ? Number(width) : 160;
+  return `https://flagcdn.com/w${safeWidth}/${code}.png`;
+}
+
+function flagSrcSet(code) {
+  code = normalizeCountryCode(code).toLowerCase();
+  if (!/^[a-z]{2}$/.test(code)) return '';
+  return [
+    `https://flagcdn.com/w80/${code}.png 1x`,
+    `https://flagcdn.com/w160/${code}.png 2x`,
+    `https://flagcdn.com/w320/${code}.png 3x`
+  ].join(', ');
 }
 
 function createLogoFallback() {

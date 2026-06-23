@@ -790,7 +790,7 @@ svg {
 
 .channel-card {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   min-height: 66px;
@@ -825,9 +825,9 @@ svg {
 .channel-logo,
 .channel-card img,
 .logo-fallback {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
+  width: 58px;
+  height: 40px;
+  border-radius: 6px;
 }
 
 .channel-logo {
@@ -853,7 +853,7 @@ svg {
   color: #101114;
   background: linear-gradient(135deg, #f8fff5, #d9eef8);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  font-size: 25px;
+  font-size: 23px;
   font-weight: 900;
 }
 
@@ -1233,14 +1233,14 @@ svg {
   }
 
   .channel-card {
-    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-columns: 50px minmax(0, 1fr) auto;
     padding: 10px;
   }
 
   .channel-logo,
   .channel-card img,
   .logo-fallback {
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 34px;
   }
 }
