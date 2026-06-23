@@ -1,0 +1,22 @@
+node_modules/
+.env
+.env.*
+*.log
+server.out.log
+server.err.log
+
+# Local tooling and bulky downloaded utilities
+ffmpeg-8.1-essentials_build/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Secrets and local deployment keys
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+watchnations_hostinger_ed25519*
