@@ -1,0 +1,29 @@
+# WatchNations
+
+WatchNations is a free web application for discovering publicly available live TV channels and radio stations from around the world.
+
+Primary URL: https://watchnations.com/
+
+## What The Site Does
+
+- Helps users browse live TV channels by country.
+- Provides an interactive 3D globe for country discovery.
+- Lets users browse channel categories such as news, sports, music, movies, kids, weather, and education.
+- Provides radio station discovery by country.
+- Stores favorite channels locally in the user's browser.
+
+## Content Policy
+
+WatchNations does not host, upload, broadcast, or control video streams. The site organizes and links to publicly available external sources in good faith.
+
+Copyright and DMCA requests can be sent to: lindaraymane@gmail.com
+
+## Important Pages
+
+- Home: https://watchnations.com/
+- Sitemap: https://watchnations.com/sitemap.xml
+- Robots: https://watchnations.com/robots.txt
+
+## Best Summary
+
+WatchNations is a fast, free, global live TV and radio discovery platform with country browsing, category browsing, favorites, and an interactive globe.

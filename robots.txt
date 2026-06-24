@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://watchnations.com/sitemap.xml
+LLMs: https://watchnations.com/llms.txt

@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 const { spawn } = require('child_process');
 
 const root = __dirname;
@@ -21,6 +22,7 @@ const IPTV_API_BASE = 'https://iptv-org.github.io/api';
 const RADIO_USER_AGENT = 'WatchNations/1.0';
 const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
+const compressedFileCache = new Map();
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -127,19 +129,7 @@ const server = http.createServer((request, response) => {
       return;
     }
 
-    fs.readFile(filePath, (error, data) => {
-      if (error) {
-        response.writeHead(404);
-        response.end('Not found');
-        return;
-      }
-
-      response.writeHead(200, {
-        'Content-Type': types[path.extname(filePath)],
-        'Cache-Control': staticCacheControl(filePath)
-      });
-      response.end(request.method === 'HEAD' ? undefined : data);
-    });
+    sendStaticFile(request, response, filePath);
   });
 
 server.headersTimeout = 10_000;
@@ -148,6 +138,69 @@ server.keepAliveTimeout = 5_000;
 server.listen(port, host, () => {
   console.log(`WatchNations running at http://${host}:${port}`);
 });
+
+function sendStaticFile(request, response, filePath) {
+  fs.stat(filePath, (statError, stats) => {
+    if (statError || !stats.isFile()) {
+      response.writeHead(404);
+      response.end('Not found');
+      return;
+    }
+
+    const etag = `"${stats.size.toString(16)}-${Math.floor(stats.mtimeMs).toString(16)}"`;
+    if (request.headers['if-none-match'] === etag) {
+      response.writeHead(304, {
+        'ETag': etag,
+        'Cache-Control': staticCacheControl(filePath)
+      });
+      response.end();
+      return;
+    }
+
+    fs.readFile(filePath, (error, data) => {
+      if (error) {
+        response.writeHead(404);
+        response.end('Not found');
+        return;
+      }
+
+      const headers = {
+        'Content-Type': types[path.extname(filePath)],
+        'Cache-Control': staticCacheControl(filePath),
+        'ETag': etag,
+        'Vary': 'Accept-Encoding'
+      };
+      const encoded = compressStaticBody(request, filePath, data, etag);
+      if (encoded.encoding) headers['Content-Encoding'] = encoded.encoding;
+
+      response.writeHead(200, headers);
+      response.end(request.method === 'HEAD' ? undefined : encoded.body);
+    });
+  });
+}
+
+function compressStaticBody(request, filePath, data, etag) {
+  if (data.length < 1024) return { body: data, encoding: '' };
+  const ext = path.extname(filePath);
+  if (!['.html', '.js', '.css', '.json', '.geojson', '.txt', '.xml', '.webmanifest'].includes(ext)) {
+    return { body: data, encoding: '' };
+  }
+
+  const accepted = String(request.headers['accept-encoding'] || '');
+  const encoding = accepted.includes('br') ? 'br' : (accepted.includes('gzip') ? 'gzip' : '');
+  if (!encoding) return { body: data, encoding: '' };
+
+  const cacheKey = `${filePath}:${etag}:${encoding}`;
+  const cached = compressedFileCache.get(cacheKey);
+  if (cached) return { body: cached, encoding };
+
+  const body = encoding === 'br'
+    ? zlib.brotliCompressSync(data, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 } })
+    : zlib.gzipSync(data, { level: 6 });
+  compressedFileCache.set(cacheKey, body);
+  if (compressedFileCache.size > 80) compressedFileCache.delete(compressedFileCache.keys().next().value);
+  return { body, encoding };
+}
 
 function allowApiRequest(request, response) {
   const key = request.socket.remoteAddress || 'local';
@@ -181,7 +234,7 @@ function allowApiRequest(request, response) {
 
 function isAllowedStaticPath(filePath) {
   if (filePath === path.join(rootPath, 'index.html')) return true;
-  if (['robots.txt', 'sitemap.xml', 'site.webmanifest'].some((file) => filePath === path.join(rootPath, file))) return true;
+  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt'].some((file) => filePath === path.join(rootPath, file))) return true;
   const relative = path.relative(rootPath, filePath);
   const [topLevel] = relative.split(path.sep);
   return ['src', 'data', 'assets'].includes(topLevel);
@@ -190,8 +243,8 @@ function isAllowedStaticPath(filePath) {
 function staticCacheControl(filePath) {
   const relative = path.relative(rootPath, filePath);
   const [topLevel] = relative.split(path.sep);
-  if (topLevel === 'data' || topLevel === 'assets') return 'public, max-age=86400';
-  if (['robots.txt', 'sitemap.xml', 'site.webmanifest'].includes(relative)) return 'public, max-age=3600';
+  if (topLevel === 'data' || topLevel === 'assets') return 'public, max-age=604800';
+  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt'].includes(relative)) return 'public, max-age=3600';
   if (topLevel === 'src') return 'no-cache';
   return 'no-store';
 }
@@ -500,7 +553,7 @@ function setSecurityHeaders(response) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'sha256-CAvPzJ8HBILrOTLQmAXjHvfwbTCxSALrZcX6ihYfmVA=' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net",
+      "script-src 'self' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net",
       "style-src 'self' 'unsafe-inline' https://vjs.zencdn.net",
       "img-src 'self' https: data:",
       "connect-src 'self' https: http:",

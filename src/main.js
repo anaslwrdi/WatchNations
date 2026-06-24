@@ -5,6 +5,7 @@ let DateTime;
 const API_BASE = 'https://iptv-org.github.io/api';
 const IPTV_BASE = 'https://iptv-org.github.io/iptv';
 const WORLD_GEOJSON = '/data/countries-lite.json';
+const LOCAL_COUNTRIES = '/data/iptv-countries.min.json';
 
 const palette = ['#1eb6d9', '#e7c51e', '#3daf58', '#d84d77', '#f2643f', '#9b58b4', '#42c7bb'];
 const channelCache = new Map();
@@ -747,7 +748,6 @@ updateClock();
 updateMediaLabels();
 initGlobe();
 loadCountries();
-preloadVideoPlayerWhenIdle();
 
 async function initGlobe() {
   const mount = document.getElementById('globeStage');
@@ -796,7 +796,7 @@ function updateClock() {
 
 async function loadCountries() {
   try {
-    const countries = await cachedJson(`${API_BASE}/countries.json`, 'countries');
+    const countries = await cachedJson(LOCAL_COUNTRIES, 'countries-lite', { fallbackUrl: `${API_BASE}/countries.json` });
     appState.countries = dedupeCountries(
       countries
         .map(normalizeCountry)
@@ -817,11 +817,20 @@ async function loadCountries() {
   }
 }
 
-async function cachedJson(url, key) {
+async function cachedJson(url, key, options = {}) {
   const cached = sessionStorage.getItem(`watchnations:${key}`);
   if (cached) return safeParseJSON(cached, []);
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Failed to load ${url}`);
+
+  let response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+    if (!response.ok) throw new Error(`Failed to load ${url}`);
+  } catch (error) {
+    if (!options.fallbackUrl) throw error;
+    response = await fetch(options.fallbackUrl, { signal: AbortSignal.timeout(18_000) });
+    if (!response.ok) throw new Error(`Failed to load ${options.fallbackUrl}`);
+  }
+
   const data = await response.json();
   safeSessionSet(`watchnations:${key}`, data);
   return data;
