@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 const root = __dirname;
@@ -12,6 +13,8 @@ const MAX_AI_PAYLOAD_BYTES = 600_000;
 const MAX_URL_LENGTH = 2048;
 const API_RATE_LIMIT_WINDOW_MS = 60_000;
 const API_RATE_LIMIT_MAX = 180;
+const DEVELOPER_STATE_FILE = path.join(rootPath, 'data', 'developer-state.json');
+const DEFAULT_DEVELOPER_PASSWORD = 'laxa123';
 const rateLimitBuckets = new Map();
 const RADIO_BROWSER_HOSTS = [
   'https://de1.api.radio-browser.info',
@@ -55,6 +58,44 @@ const SEO_CATEGORIES = [
   ['shop', 'Shop', 'shopping TV channels'],
   ['travel', 'Travel', 'travel and tourism TV channels'],
   ['weather', 'Weather', 'weather forecast TV channels']
+];
+const SEO_KEYWORDS = [
+  'watch global tv online free',
+  'watch local tv online free',
+  'free live tv no subscription',
+  'tv streaming no signup',
+  'international tv channels free',
+  'world tv channels streaming',
+  'live TV',
+  'free streaming',
+  'online television',
+  'news live',
+  'sports streaming',
+  'regarder tv en direct gratuit',
+  'tv en direct monde entier',
+  'watch tv channels by country',
+  'interactive 3d globe tv channels',
+  'discover international tv channels',
+  'listen to radio stations worldwide',
+  'free tv no account required',
+  'random tv channel generator',
+  'random tv channel discovery',
+  'watch global tv online',
+  'watch international tv live free',
+  'world tv channel list',
+  'global tv channel list free',
+  'watch news from around the world',
+  'iptv list by country',
+  'free live tv online',
+  'free live tv streaming',
+  'free iptv channels',
+  'global tv channel aggregator',
+  'مشاهدة قنوات عربية بث مباشر مجانا',
+  'قنوات عربية بث مباشر بدون اشتراك',
+  'قنوات سعودية بث مباشر',
+  'قنوات مصرية بث مباشر مجاني',
+  'قنوات اماراتية اونلاين',
+  'مشاهدة قنوات عربية بث مباشر'
 ];
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -102,6 +143,51 @@ const server = http.createServer((request, response) => {
         .then((payload) => runPythonAI(payload).catch(() => jsRankFallback(payload)))
         .then((result) => sendJson(response, 200, result))
         .catch(() => sendJson(response, 200, jsRankFallback({ channels: [] })));
+      return;
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/visitors/track') {
+      readJson(request)
+        .then((payload) => trackVisitor(payload, request))
+        .then((result) => sendJson(response, 200, result))
+        .catch(() => sendJson(response, 200, publicVisitorStats()));
+      return;
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/developer/login') {
+      readJson(request)
+        .then((payload) => {
+          if (!verifyDeveloperPassword(payload?.password)) {
+            sendJson(response, 401, { ok: false, error: 'Invalid password' });
+            return;
+          }
+          sendJson(response, 200, { ok: true, stats: developerStats() });
+        })
+        .catch(() => sendJson(response, 400, { ok: false, error: 'Bad request' }));
+      return;
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/developer/password') {
+      readJson(request)
+        .then((payload) => {
+          const currentPassword = String(payload?.currentPassword || '');
+          const newPassword = String(payload?.newPassword || '');
+          if (!verifyDeveloperPassword(currentPassword)) {
+            sendJson(response, 401, { ok: false, error: 'Invalid current password' });
+            return;
+          }
+          const validationError = validateDeveloperPassword(newPassword);
+          if (validationError) {
+            sendJson(response, 400, { ok: false, error: validationError });
+            return;
+          }
+          const state = loadDeveloperState();
+          state.passwordHash = hashDeveloperSecret(newPassword);
+          state.updatedAt = new Date().toISOString();
+          saveDeveloperState(state);
+          sendJson(response, 200, { ok: true, stats: developerStats() });
+        })
+        .catch(() => sendJson(response, 400, { ok: false, error: 'Bad request' }));
       return;
     }
 
@@ -348,10 +434,15 @@ function renderSeoRoute(pathname) {
 
   return seoPage({
     path: '/',
-    title: 'WatchNations - Free Live TV Channels by Country',
-    description: 'Explore free live TV channels and radio stations from around the world by country and category.',
+    title: 'WatchNations - Watch Global TV Online Free',
+    description: 'Watch global TV online free, watch local TV online free, discover international TV channels free, and enjoy free live TV with no subscription or signup.',
     heading: 'WatchNations',
-    body: ['Explore global free live TV and radio by country.']
+    body: [
+      'WatchNations is a global TV channel aggregator for people who want to watch global TV online free, watch local TV online free, browse a world TV channel list, and discover international TV channels free.',
+      'Use interactive 3D globe TV channels, free live TV no subscription, TV streaming no signup, online television, world TV channels streaming, news live, sports streaming, radio stations worldwide, and electronic newspapers by country from one free app.',
+      'French viewers can use WatchNations to regarder tv en direct gratuit and explore tv en direct monde entier.',
+      'Arabic users can explore مشاهدة قنوات عربية بث مباشر مجانا, قنوات عربية بث مباشر بدون اشتراك, قنوات سعودية بث مباشر, قنوات مصرية بث مباشر مجاني, and قنوات اماراتية اونلاين.'
+    ]
   });
 }
 
@@ -363,10 +454,10 @@ function renderCountriesSeoPage() {
   return seoPage({
     path: '/countries',
     title: 'Countries - Watch Free Live TV by Country | WatchNations',
-    description: 'Browse countries on WatchNations and discover free live TV channels and radio stations from around the world.',
+    description: 'Browse countries on WatchNations to watch TV channels by country, explore an IPTV list by country, and listen to radio stations worldwide.',
     heading: 'Browse Live TV by Country',
     bodyHtml: `
-      <p>Choose a country to discover free live TV channels and radio stations. Each country page links back to the interactive WatchNations app.</p>
+      <p>Choose a country to discover free live TV channels, radio stations worldwide, and a global TV channel list free to browse. Each country page links back to the interactive WatchNations app.</p>
       <ul class="country-grid">${countryLinks}</ul>
     `
   });
@@ -379,10 +470,10 @@ function renderCategoriesSeoPage() {
   return seoPage({
     path: '/categories',
     title: 'Live TV Categories - WatchNations',
-    description: 'Browse free live TV channels by category on WatchNations, including news, sports, music, movies, kids, weather, documentaries, and more.',
+    description: 'Browse free live TV channels by category on WatchNations, discover international TV channels, and watch news from around the world.',
     heading: 'Browse Live TV by Category',
     bodyHtml: `
-      <p>WatchNations organizes global live TV channels into categories so users can discover channels by topic as well as by country.</p>
+      <p>WatchNations organizes global live TV channels into categories so users can discover channels by topic, by country, and through random TV channel discovery.</p>
       <ul class="category-grid">${categoryLinks}</ul>
     `
   });
@@ -404,11 +495,11 @@ function renderCategorySeoPage(rawCategory) {
   return seoPage({
     path: `/categories/${id}`,
     title: `${label} Live TV Channels - WatchNations`,
-    description: `Discover ${summary} on WatchNations. Browse free live TV channels by category, country, and interactive globe.`,
+    description: `Discover ${summary} on WatchNations. Browse free live TV channels by category, country, and interactive 3D globe TV channels.`,
     heading: `${label} Live TV Channels`,
     body: [
       `WatchNations helps users discover ${summary}.`,
-      `Open the WatchNations app to browse ${label.toLowerCase()} channels from all countries, search streams, and save favorites locally in your browser.`,
+      `Open the WatchNations app to browse ${label.toLowerCase()} channels from all countries, search streams, listen to radio stations worldwide, and save favorites locally in your browser.`,
       'Streams are provided by external public sources. WatchNations does not host or control video content.'
     ],
     cta: { href: `/?category=${id}`, label: `Open ${label} Channels` }
@@ -431,15 +522,35 @@ function renderCountrySeoPage(rawCode) {
   return seoPage({
     path: `/countries/${code.toLowerCase()}`,
     title: `${country.name} Live TV Channels - WatchNations`,
-    description: `Watch free live TV channels and radio stations from ${country.name} on WatchNations. Browse by country, category, and interactive globe.`,
+    description: `${countrySeoDescription(code, country)} Browse by country, category, radio, electronic newspapers, and interactive globe.`,
     heading: `${country.name} Live TV Channels`,
     body: [
-      `WatchNations helps users discover free live TV channels and radio stations from ${country.name}.`,
-      `Open the WatchNations app to browse ${country.name} channels, save favorites, and explore related categories such as news, sports, music, movies, and weather.`,
+      `WatchNations helps users watch TV channels by country and discover free live TV channels and radio stations from ${country.name}.`,
+      countryArabicSeoLine(code, country.name),
+      `Open the WatchNations app to browse ${country.name} channels, save favorites, use random TV channel discovery, and explore related categories such as news, sports, music, movies, and weather.`,
       'Streams are provided by external public sources. WatchNations does not host or control video content.'
     ],
     cta: { href: `/?country=${code}`, label: `Open ${country.name} in WatchNations` }
   });
+}
+
+function countrySeoDescription(code, country) {
+  code = normalizeCountryCode(code);
+  const arabicTargets = {
+    SA: 'قنوات سعودية بث مباشر على WatchNations مع روابط TV وراديو ومصادر إلكترونية حسب الدولة.',
+    EG: 'قنوات مصرية بث مباشر مجاني على WatchNations مع مشاهدة قنوات عربية بث مباشر مجانا وبدون اشتراك.',
+    AE: 'قنوات اماراتية اونلاين على WatchNations مع قنوات عربية بث مباشر بدون اشتراك ومصادر عالمية.'
+  };
+  return arabicTargets[code] || `Watch free live TV channels and radio stations from ${country.name} on WatchNations.`;
+}
+
+function countryArabicSeoLine(code, countryName) {
+  const lines = {
+    SA: 'هذه الصفحة تستهدف قنوات سعودية بث مباشر ضمن تجربة مشاهدة قنوات عربية بث مباشر مجانا وبدون اشتراك.',
+    EG: 'هذه الصفحة مناسبة لمن يبحث عن قنوات مصرية بث مباشر مجاني ومشاهدة قنوات عربية بث مباشر.',
+    AE: 'هذه الصفحة مناسبة لمن يبحث عن قنوات اماراتية اونلاين وقنوات عربية بث مباشر بدون اشتراك.'
+  };
+  return lines[normalizeCountryCode(code)] || `${countryName} is part of the WatchNations country TV guide and global TV channel list free to explore.`;
 }
 
 function seoPage({ path: pathname, title, description, heading, body = [], bodyHtml = '', cta }) {
@@ -453,6 +564,8 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}">
+  <meta name="keywords" content="${escapeHtml(SEO_KEYWORDS.join(', '))}">
+  <meta name="news_keywords" content="${escapeHtml(SEO_KEYWORDS.slice(0, 12).join(', '))}">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <meta name="google-site-verification" content="BOGebDfiNtUgDvVuRNuqb7sQb92qcvZ3Y-CkEgRrhKE">
@@ -629,6 +742,83 @@ function sendJson(response, status, payload) {
     'Cache-Control': 'no-store'
   });
   response.end(JSON.stringify(payload));
+}
+
+function defaultDeveloperState() {
+  return {
+    passwordHash: hashDeveloperSecret(DEFAULT_DEVELOPER_PASSWORD),
+    totalVisits: 0,
+    uniqueVisitors: [],
+    firstVisitAt: '',
+    lastVisitAt: '',
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function loadDeveloperState() {
+  try {
+    const state = JSON.parse(fs.readFileSync(DEVELOPER_STATE_FILE, 'utf8'));
+    return {
+      ...defaultDeveloperState(),
+      ...state,
+      uniqueVisitors: Array.isArray(state.uniqueVisitors) ? state.uniqueVisitors : []
+    };
+  } catch (error) {
+    const state = defaultDeveloperState();
+    saveDeveloperState(state);
+    return state;
+  }
+}
+
+function saveDeveloperState(state) {
+  fs.mkdirSync(path.dirname(DEVELOPER_STATE_FILE), { recursive: true });
+  fs.writeFileSync(DEVELOPER_STATE_FILE, JSON.stringify(state, null, 2));
+}
+
+function hashDeveloperSecret(value) {
+  return crypto.createHash('sha256').update(String(value || '')).digest('hex');
+}
+
+function verifyDeveloperPassword(password) {
+  const state = loadDeveloperState();
+  return state.passwordHash === hashDeveloperSecret(password);
+}
+
+function validateDeveloperPassword(password) {
+  if (password.length < 4) return 'Password must be at least 4 characters.';
+  if (password.length > 80) return 'Password is too long.';
+  return '';
+}
+
+function trackVisitor(payload, request) {
+  const state = loadDeveloperState();
+  const visitorId = safeText(payload?.visitorId, 120) || `${request.socket.remoteAddress || 'local'}:${request.headers['user-agent'] || ''}`;
+  const visitorHash = hashDeveloperSecret(visitorId);
+  const now = new Date().toISOString();
+  state.totalVisits = Number(state.totalVisits || 0) + 1;
+  if (!state.uniqueVisitors.includes(visitorHash)) state.uniqueVisitors.push(visitorHash);
+  state.firstVisitAt = state.firstVisitAt || now;
+  state.lastVisitAt = now;
+  saveDeveloperState(state);
+  return publicVisitorStats(state);
+}
+
+function publicVisitorStats(state = loadDeveloperState()) {
+  return {
+    ok: true,
+    visitors: Number(state.uniqueVisitors?.length || 0)
+  };
+}
+
+function developerStats() {
+  const state = loadDeveloperState();
+  return {
+    visitors: Number(state.uniqueVisitors.length || 0),
+    totalVisits: Number(state.totalVisits || 0),
+    firstVisitAt: state.firstVisitAt || '',
+    lastVisitAt: state.lastVisitAt || '',
+    updatedAt: state.updatedAt || ''
+  };
 }
 
 async function handleRadioStations(url) {
@@ -883,7 +1073,7 @@ function setSecurityHeaders(response) {
       "img-src 'self' https: data:",
       "connect-src 'self' https: http: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net",
       "media-src https: http: blob:",
-      "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
+      "frame-src https: http:",
       "font-src 'self' data:",
       "worker-src blob:",
       "object-src 'none'",

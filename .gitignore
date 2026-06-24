@@ -4,6 +4,7 @@ node_modules/
 *.log
 server.out.log
 server.err.log
+data/developer-state.json
 
 # Local tooling and bulky downloaded utilities
 ffmpeg-8.1-essentials_build/

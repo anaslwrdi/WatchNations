@@ -6,12 +6,15 @@ const API_BASE = 'https://iptv-org.github.io/api';
 const IPTV_BASE = 'https://iptv-org.github.io/iptv';
 const WORLD_GEOJSON = '/data/countries-lite.json';
 const LOCAL_COUNTRIES = '/data/iptv-countries.min.json';
+const NEWSPAPERS_DATA = '/data/newspapers.json';
 
 const palette = ['#1eb6d9', '#e7c51e', '#3daf58', '#d84d77', '#f2643f', '#9b58b4', '#42c7bb'];
 const channelCache = new Map();
 let iptvApiIndexPromise;
 const LOAD_EXTERNAL_LOGOS = false;
 const CHANNEL_CACHE_VERSION = 'flags-categories-v1';
+const INITIAL_CHANNEL_RENDER_LIMIT = window.matchMedia('(max-width: 760px)').matches ? 60 : 140;
+const CHANNEL_RENDER_INCREMENT = window.matchMedia('(max-width: 760px)').matches ? 90 : 220;
 const countryCodeAliases = {
   EH: 'MA',
   UK: 'GB',
@@ -193,6 +196,638 @@ const footerNavItems = [
   ['feedback', 'Feedback', 'message']
 ];
 
+const supportedLanguages = [
+  ['en', 'English'],
+  ['es', 'Español'],
+  ['fr', 'Français'],
+  ['ar', 'العربية'],
+  ['it', 'Italiano']
+];
+
+const translations = {
+  en: {
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+    focusGlobe: 'Focus globe',
+    randomCountry: 'Random country',
+    search: 'Search',
+    tv: 'TV',
+    radio: 'Radio',
+    newspapers: 'E-Newspapers',
+    globeZoomControls: 'Globe zoom controls',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    resetZoom: 'Reset zoom',
+    clickCountry: 'Click a country',
+    ready: 'Ready',
+    readyDetail: 'Move the globe until a country is inside the red circle',
+    fastMode: 'Fast mode',
+    chooseFromGlobe: 'Choose from the globe',
+    heroHint: 'Move the globe, place a country in the red circle, then click.',
+    chooseCountry: 'Choose a country',
+    selectCountry: 'Select a Country',
+    changeCountry: 'Change country',
+    searchCountry: 'Search country',
+    loadingCountries: 'Loading countries...',
+    advertisement: 'Advertisement',
+    selectChannel: 'Select a channel',
+    selectRadio: 'Select a radio station',
+    pip: 'Picture in picture',
+    close: 'Close',
+    freeChannels: 'Free Channels',
+    freeRadio: 'Free Radio',
+    smartReady: 'Smart filter is ready',
+    searchChannels: 'Search channels or category',
+    searchRadio: 'Search stations, language, or tag',
+    explore: 'Explore',
+    favorites: 'Favorites',
+    favoriteChannels: 'Favorite Channels',
+    favoriteRadio: 'Favorite Radio',
+    about: 'About',
+    faq: 'FAQ',
+    privacy: 'Privacy Policy',
+    feedback: 'Feedback',
+    allChannels: 'All Channels',
+    loadingGlobe: 'Loading globe',
+    globeError: 'Globe could not load',
+    channelsWillAppear: 'Channels will appear here after you choose a country from the globe.',
+    radioWillAppear: 'Radio stations will appear here after you choose a country from the globe.',
+    clickCountryChannels: 'Click a country on the globe to load channels',
+    clickCountryRadio: 'Click a country on the globe to load radio stations',
+    chooseCountryRadioFirst: 'Choose a country first, then filter radio stations',
+    chooseCountryRadioFirstBody: 'Choose a country first to browse radio stations by category.',
+    noFavorites: 'No favorites yet. Press the star button on any channel to save it here.',
+    noMatch: 'No {label} match the current filter.',
+    removeFavorite: 'Remove favorite',
+    addFavorite: 'Add favorite',
+    play: 'Play',
+    showMore: 'Show {count} more of {remaining}',
+    noChannelsAvailable: 'No channels available for the current filter.',
+    noRadioAvailable: 'No radio stations available for the current filter.',
+    loadingChannelsAll: 'Loading channels from all countries',
+    loadingCategoryAll: 'Loading {label} channels from all countries',
+    couldNotLoadChannels: 'Could not load channels right now',
+    channelsCouldNotLoad: 'Channels could not be loaded right now.',
+    couldNotLoadGlobal: 'Could not load global channels right now',
+    globalCouldNotLoad: 'Global channels could not be loaded right now.',
+    loadingMediaForCountry: 'Loading {label} for this country',
+    selectedFromGlobe: 'Selected from the globe',
+    mediaAvailable: '{count} {label} available',
+    noMediaFound: 'No {label} found for this country',
+    noMediaFoundDetail: 'No playable free {label} were found for this country right now.',
+    tvActive: 'TV mode is active.',
+    radioActive: 'Radio mode is active.',
+    newspapersReady: 'E-Newspapers button is ready. Send the data to connect it.',
+    countryUnavailable: 'This country is not available yet.',
+    countryLoading: 'Country data is still loading.',
+    clickDirectlyCountry: 'Click directly on a country.',
+    moveCountryCircle: 'Move a country into the circle',
+    moveGlobe: 'Move the globe',
+    placeCountryCircle: 'Place a country inside the red circle, then click',
+    clickGlobeLoadChannels: 'Click the globe to load channels',
+    clickToLoadChannels: 'Click to load channels',
+    zoom: 'Zoom {percent}%',
+    addedFavorite: 'Added to Favorites.',
+    removedFavorite: 'Removed from Favorites.',
+    favoritesFull: 'Favorites storage is full.',
+    unsafeChannel: 'This channel link is not safe to open.',
+    unsafeStream: 'This stream URL is not safe to play.',
+    loadingLiveStream: 'Loading live stream...',
+    pressPlayStream: 'Press play to start this stream.',
+    playerError: 'Video player could not load. Opening stream in a new tab.',
+    loadingRadio: 'Loading {title}...',
+    pressPlayRadio: 'Press play to start this radio station.',
+    pipTvOnly: 'Picture in picture is available for TV streams.',
+    pipUnsupported: 'Your browser does not support picture in picture.',
+    startVideoFirst: 'Start the video first, then try PiP.',
+    globalTvOnly: 'Global TV is available in TV mode.',
+    loadedStreams: 'Loaded {count} playable streams',
+    streamsLoaded: '{count} playable streams loaded',
+    globalIndexError: 'Could not load the global channel index',
+    globalIndexErrorBody: 'The global channel index could not be loaded right now.',
+    developerArea: 'Developer Area',
+    developerTitle: 'WatchNations Developer',
+    accessCode: 'Access code',
+    enterCode: 'Enter code',
+    openDeveloper: 'Open developer page',
+    realVisitors: 'Real visitors',
+    totalVisits: 'Total visits',
+    lastVisit: 'Last visit: {date}',
+    currentCode: 'Current code',
+    newCode: 'New code',
+    changeCode: 'Change code',
+    checkingCode: 'Checking code...',
+    developerOpen: 'Developer page is open.',
+    wrongCode: 'Wrong code.',
+    savingCode: 'Saving new code...',
+    codeChanged: 'Code changed successfully.',
+    refreshStatsError: 'Could not refresh stats.',
+    requestFailed: 'Request failed.',
+    category: {
+      all: 'All Channels', 'top-news': 'Top News', news: 'News', music: 'Music', sports: 'Sports',
+      auto: 'Auto', animation: 'Animation', business: 'Business', classic: 'Classic', comedy: 'Comedy',
+      cooking: 'Cooking', culture: 'Culture', documentary: 'Documentary', education: 'Education',
+      entertainment: 'Entertainment', family: 'Family', general: 'General', kids: 'Kids',
+      legislative: 'Legislative', lifestyle: 'Lifestyle', movies: 'Movies', outdoor: 'Outdoor',
+      relax: 'Relax', religious: 'Religious', series: 'Series', science: 'Science', shop: 'Shop',
+      travel: 'Travel', weather: 'Weather', favorites: 'Favorites'
+    }
+  },
+  es: {
+    openMenu: 'Abrir menú', closeMenu: 'Cerrar menú', focusGlobe: 'Centrar globo', randomCountry: 'País aleatorio',
+    search: 'Buscar', tv: 'TV', radio: 'Radio', newspapers: 'Periódicos digitales', globeZoomControls: 'Controles de zoom del globo',
+    zoomIn: 'Acercar', zoomOut: 'Alejar', resetZoom: 'Restablecer zoom', clickCountry: 'Haz clic en un país',
+    ready: 'Listo', readyDetail: 'Mueve el globo hasta que un país quede dentro del círculo rojo', fastMode: 'Modo rápido',
+    chooseFromGlobe: 'Elige desde el globo', heroHint: 'Mueve el globo, coloca un país en el círculo rojo y haz clic.',
+    chooseCountry: 'Elegir país', selectCountry: 'Selecciona un país', changeCountry: 'Cambiar país',
+    searchCountry: 'Buscar país', loadingCountries: 'Cargando países...', advertisement: 'Publicidad',
+    selectChannel: 'Selecciona un canal', selectRadio: 'Selecciona una emisora', pip: 'Imagen en imagen',
+    close: 'Cerrar', freeChannels: 'Canales gratis', freeRadio: 'Radio gratis', smartReady: 'Filtro inteligente listo',
+    searchChannels: 'Buscar canales o categoría', searchRadio: 'Buscar emisoras, idioma o etiqueta', explore: 'Explorar',
+    favorites: 'Favoritos', favoriteChannels: 'Canales favoritos', favoriteRadio: 'Radios favoritas',
+    about: 'Acerca de', faq: 'FAQ', privacy: 'Política de privacidad', feedback: 'Comentarios',
+    allChannels: 'Todos los canales', loadingGlobe: 'Cargando globo', globeError: 'No se pudo cargar el globo',
+    channelsWillAppear: 'Los canales aparecerán aquí después de elegir un país en el globo.',
+    radioWillAppear: 'Las emisoras aparecerán aquí después de elegir un país en el globo.',
+    clickCountryChannels: 'Haz clic en un país del globo para cargar canales',
+    clickCountryRadio: 'Haz clic en un país del globo para cargar radios',
+    chooseCountryRadioFirst: 'Elige primero un país y luego filtra las radios',
+    chooseCountryRadioFirstBody: 'Elige primero un país para ver radios por categoría.',
+    noFavorites: 'Aún no hay favoritos. Pulsa la estrella de cualquier canal para guardarlo aquí.',
+    noMatch: 'No hay {label} que coincidan con el filtro actual.', removeFavorite: 'Quitar favorito',
+    addFavorite: 'Añadir favorito', play: 'Reproducir', showMore: 'Mostrar {count} más de {remaining}',
+    noChannelsAvailable: 'No hay canales disponibles para el filtro actual.',
+    noRadioAvailable: 'No hay emisoras disponibles para el filtro actual.',
+    loadingChannelsAll: 'Cargando canales de todos los países',
+    loadingCategoryAll: 'Cargando canales de {label} de todos los países',
+    couldNotLoadChannels: 'No se pudieron cargar los canales ahora',
+    channelsCouldNotLoad: 'Los canales no se pudieron cargar ahora.',
+    couldNotLoadGlobal: 'No se pudieron cargar los canales globales ahora',
+    globalCouldNotLoad: 'Los canales globales no se pudieron cargar ahora.',
+    loadingMediaForCountry: 'Cargando {label} para este país', selectedFromGlobe: 'Seleccionado desde el globo',
+    mediaAvailable: '{count} {label} disponibles', noMediaFound: 'No se encontraron {label} para este país',
+    noMediaFoundDetail: 'No se encontraron {label} gratis reproducibles para este país ahora.',
+    tvActive: 'Modo TV activo.', radioActive: 'Modo radio activo.',
+    newspapersReady: 'El botón de periódicos digitales está listo. Envía los datos para conectarlo.',
+    countryUnavailable: 'Este país aún no está disponible.', countryLoading: 'Los datos del país aún se están cargando.',
+    clickDirectlyCountry: 'Haz clic directamente en un país.', moveCountryCircle: 'Mueve un país dentro del círculo',
+    moveGlobe: 'Mueve el globo', placeCountryCircle: 'Coloca un país dentro del círculo rojo y haz clic',
+    clickGlobeLoadChannels: 'Haz clic en el globo para cargar canales', clickToLoadChannels: 'Haz clic para cargar canales',
+    zoom: 'Zoom {percent}%', addedFavorite: 'Añadido a Favoritos.', removedFavorite: 'Eliminado de Favoritos.',
+    favoritesFull: 'El almacenamiento de favoritos está lleno.', unsafeChannel: 'Este enlace de canal no es seguro.',
+    unsafeStream: 'Esta URL de stream no es segura.', loadingLiveStream: 'Cargando transmisión en vivo...',
+    pressPlayStream: 'Pulsa reproducir para iniciar esta transmisión.', playerError: 'No se pudo cargar el reproductor. Abriendo en una nueva pestaña.',
+    loadingRadio: 'Cargando {title}...', pressPlayRadio: 'Pulsa reproducir para iniciar esta emisora.',
+    pipTvOnly: 'Imagen en imagen está disponible para streams de TV.', pipUnsupported: 'Tu navegador no soporta imagen en imagen.',
+    startVideoFirst: 'Inicia el video primero y luego prueba PiP.', globalTvOnly: 'La TV global está disponible en modo TV.',
+    loadedStreams: '{count} streams reproducibles cargados', streamsLoaded: '{count} streams reproducibles cargados',
+    globalIndexError: 'No se pudo cargar el índice global de canales',
+    globalIndexErrorBody: 'El índice global de canales no se pudo cargar ahora.',
+    developerArea: 'Área de desarrollador', developerTitle: 'Desarrollador de WatchNations',
+    accessCode: 'Código de acceso', enterCode: 'Introduce el código', openDeveloper: 'Abrir página de desarrollador',
+    realVisitors: 'Visitantes reales', totalVisits: 'Visitas totales', lastVisit: 'Última visita: {date}',
+    currentCode: 'Código actual', newCode: 'Nuevo código', changeCode: 'Cambiar código',
+    checkingCode: 'Comprobando código...', developerOpen: 'La página de desarrollador está abierta.',
+    wrongCode: 'Código incorrecto.', savingCode: 'Guardando nuevo código...', codeChanged: 'Código cambiado correctamente.',
+    refreshStatsError: 'No se pudieron actualizar las estadísticas.', requestFailed: 'Solicitud fallida.',
+    category: {
+      all: 'Todos los canales', 'top-news': 'Noticias principales', news: 'Noticias', music: 'Música', sports: 'Deportes',
+      auto: 'Motor', animation: 'Animación', business: 'Negocios', classic: 'Clásicos', comedy: 'Comedia',
+      cooking: 'Cocina', culture: 'Cultura', documentary: 'Documentales', education: 'Educación',
+      entertainment: 'Entretenimiento', family: 'Familia', general: 'General', kids: 'Niños',
+      legislative: 'Legislativo', lifestyle: 'Estilo de vida', movies: 'Películas', outdoor: 'Aire libre',
+      relax: 'Relax', religious: 'Religión', series: 'Series', science: 'Ciencia', shop: 'Compras',
+      travel: 'Viajes', weather: 'Tiempo', favorites: 'Favoritos'
+    }
+  },
+  fr: {
+    openMenu: 'Ouvrir le menu', closeMenu: 'Fermer le menu', focusGlobe: 'Centrer le globe', randomCountry: 'Pays aléatoire',
+    search: 'Rechercher', tv: 'TV', radio: 'Radio', newspapers: 'Journaux en ligne', globeZoomControls: 'Contrôles du zoom du globe',
+    zoomIn: 'Zoom avant', zoomOut: 'Zoom arrière', resetZoom: 'Réinitialiser le zoom', clickCountry: 'Cliquez sur un pays',
+    ready: 'Prêt', readyDetail: 'Déplacez le globe jusqu’à placer un pays dans le cercle rouge', fastMode: 'Mode rapide',
+    chooseFromGlobe: 'Choisir sur le globe', heroHint: 'Déplacez le globe, placez un pays dans le cercle rouge, puis cliquez.',
+    chooseCountry: 'Choisir un pays', selectCountry: 'Sélectionner un pays', changeCountry: 'Changer de pays',
+    searchCountry: 'Rechercher un pays', loadingCountries: 'Chargement des pays...', advertisement: 'Publicité',
+    selectChannel: 'Sélectionner une chaîne', selectRadio: 'Sélectionner une radio', pip: 'Image dans l’image',
+    close: 'Fermer', freeChannels: 'Chaînes gratuites', freeRadio: 'Radios gratuites', smartReady: 'Filtre intelligent prêt',
+    searchChannels: 'Rechercher chaînes ou catégorie', searchRadio: 'Rechercher radios, langue ou tag', explore: 'Explorer',
+    favorites: 'Favoris', favoriteChannels: 'Chaînes favorites', favoriteRadio: 'Radios favorites',
+    about: 'À propos', faq: 'FAQ', privacy: 'Politique de confidentialité', feedback: 'Commentaires',
+    allChannels: 'Toutes les chaînes', loadingGlobe: 'Chargement du globe', globeError: 'Impossible de charger le globe',
+    channelsWillAppear: 'Les chaînes apparaîtront ici après avoir choisi un pays sur le globe.',
+    radioWillAppear: 'Les radios apparaîtront ici après avoir choisi un pays sur le globe.',
+    clickCountryChannels: 'Cliquez sur un pays du globe pour charger les chaînes',
+    clickCountryRadio: 'Cliquez sur un pays du globe pour charger les radios',
+    chooseCountryRadioFirst: 'Choisissez d’abord un pays, puis filtrez les radios',
+    chooseCountryRadioFirstBody: 'Choisissez d’abord un pays pour parcourir les radios par catégorie.',
+    noFavorites: 'Aucun favori pour le moment. Appuyez sur l’étoile d’une chaîne pour l’enregistrer ici.',
+    noMatch: 'Aucun {label} ne correspond au filtre actuel.', removeFavorite: 'Retirer des favoris',
+    addFavorite: 'Ajouter aux favoris', play: 'Lire', showMore: 'Afficher {count} de plus sur {remaining}',
+    noChannelsAvailable: 'Aucune chaîne disponible pour le filtre actuel.',
+    noRadioAvailable: 'Aucune radio disponible pour le filtre actuel.',
+    loadingChannelsAll: 'Chargement des chaînes de tous les pays',
+    loadingCategoryAll: 'Chargement des chaînes {label} de tous les pays',
+    couldNotLoadChannels: 'Impossible de charger les chaînes maintenant',
+    channelsCouldNotLoad: 'Les chaînes n’ont pas pu être chargées maintenant.',
+    couldNotLoadGlobal: 'Impossible de charger les chaînes mondiales maintenant',
+    globalCouldNotLoad: 'Les chaînes mondiales n’ont pas pu être chargées maintenant.',
+    loadingMediaForCountry: 'Chargement des {label} pour ce pays', selectedFromGlobe: 'Sélectionné depuis le globe',
+    mediaAvailable: '{count} {label} disponibles', noMediaFound: 'Aucun {label} trouvé pour ce pays',
+    noMediaFoundDetail: 'Aucun {label} gratuit et lisible n’a été trouvé pour ce pays maintenant.',
+    tvActive: 'Mode TV actif.', radioActive: 'Mode radio actif.',
+    newspapersReady: 'Le bouton Journaux en ligne est prêt. Envoyez les données pour le connecter.',
+    countryUnavailable: 'Ce pays n’est pas encore disponible.', countryLoading: 'Les données du pays sont encore en chargement.',
+    clickDirectlyCountry: 'Cliquez directement sur un pays.', moveCountryCircle: 'Placez un pays dans le cercle',
+    moveGlobe: 'Déplacez le globe', placeCountryCircle: 'Placez un pays dans le cercle rouge, puis cliquez',
+    clickGlobeLoadChannels: 'Cliquez sur le globe pour charger les chaînes', clickToLoadChannels: 'Cliquez pour charger les chaînes',
+    zoom: 'Zoom {percent}%', addedFavorite: 'Ajouté aux favoris.', removedFavorite: 'Retiré des favoris.',
+    favoritesFull: 'Le stockage des favoris est plein.', unsafeChannel: 'Ce lien de chaîne n’est pas sûr.',
+    unsafeStream: 'Cette URL de stream n’est pas sûre.', loadingLiveStream: 'Chargement du direct...',
+    pressPlayStream: 'Appuyez sur lecture pour démarrer ce stream.', playerError: 'Le lecteur vidéo n’a pas pu charger. Ouverture dans un nouvel onglet.',
+    loadingRadio: 'Chargement de {title}...', pressPlayRadio: 'Appuyez sur lecture pour démarrer cette radio.',
+    pipTvOnly: 'L’image dans l’image est disponible pour les streams TV.', pipUnsupported: 'Votre navigateur ne prend pas en charge l’image dans l’image.',
+    startVideoFirst: 'Lancez d’abord la vidéo, puis essayez PiP.', globalTvOnly: 'La TV mondiale est disponible en mode TV.',
+    loadedStreams: '{count} streams lisibles chargés', streamsLoaded: '{count} streams lisibles chargés',
+    globalIndexError: 'Impossible de charger l’index mondial des chaînes',
+    globalIndexErrorBody: 'L’index mondial des chaînes n’a pas pu être chargé maintenant.',
+    developerArea: 'Espace développeur', developerTitle: 'Développeur WatchNations',
+    accessCode: 'Code d’accès', enterCode: 'Saisir le code', openDeveloper: 'Ouvrir la page développeur',
+    realVisitors: 'Visiteurs réels', totalVisits: 'Visites totales', lastVisit: 'Dernière visite : {date}',
+    currentCode: 'Code actuel', newCode: 'Nouveau code', changeCode: 'Changer le code',
+    checkingCode: 'Vérification du code...', developerOpen: 'La page développeur est ouverte.',
+    wrongCode: 'Code incorrect.', savingCode: 'Enregistrement du nouveau code...', codeChanged: 'Code modifié avec succès.',
+    refreshStatsError: 'Impossible d’actualiser les statistiques.', requestFailed: 'Requête échouée.',
+    category: {
+      all: 'Toutes les chaînes', 'top-news': 'À la une', news: 'Actualités', music: 'Musique', sports: 'Sports',
+      auto: 'Auto', animation: 'Animation', business: 'Business', classic: 'Classiques', comedy: 'Comédie',
+      cooking: 'Cuisine', culture: 'Culture', documentary: 'Documentaires', education: 'Éducation',
+      entertainment: 'Divertissement', family: 'Famille', general: 'Général', kids: 'Enfants',
+      legislative: 'Législatif', lifestyle: 'Lifestyle', movies: 'Films', outdoor: 'Plein air',
+      relax: 'Relax', religious: 'Religion', series: 'Séries', science: 'Science', shop: 'Shopping',
+      travel: 'Voyage', weather: 'Météo', favorites: 'Favoris'
+    }
+  },
+  ar: {
+    openMenu: 'فتح القائمة', closeMenu: 'إغلاق القائمة', focusGlobe: 'تركيز الكرة', randomCountry: 'دولة عشوائية',
+    search: 'بحث', tv: 'TV', radio: 'راديو', newspapers: 'جرائد إلكترونية', globeZoomControls: 'أدوات تكبير الكرة',
+    zoomIn: 'تكبير', zoomOut: 'تصغير', resetZoom: 'إعادة الضبط', clickCountry: 'اضغط على دولة',
+    ready: 'جاهز', readyDetail: 'حرّك الكرة حتى تدخل دولة داخل الدائرة الحمراء', fastMode: 'وضع سريع',
+    chooseFromGlobe: 'اختر من الكرة', heroHint: 'حرّك الكرة، ضع دولة داخل الدائرة الحمراء، ثم اضغط.',
+    chooseCountry: 'اختر دولة', selectCountry: 'اختر دولة', changeCountry: 'تغيير الدولة',
+    searchCountry: 'ابحث عن دولة', loadingCountries: 'جاري تحميل الدول...', advertisement: 'إعلان',
+    selectChannel: 'اختر قناة', selectRadio: 'اختر محطة راديو', pip: 'صورة داخل صورة',
+    close: 'إغلاق', freeChannels: 'قنوات مجانية', freeRadio: 'راديو مجاني', smartReady: 'الفلتر الذكي جاهز',
+    searchChannels: 'ابحث عن قنوات أو تصنيف', searchRadio: 'ابحث عن محطة أو لغة أو وسم', explore: 'استكشاف',
+    favorites: 'المفضلة', favoriteChannels: 'القنوات المفضلة', favoriteRadio: 'الراديو المفضل',
+    about: 'حول الموقع', faq: 'الأسئلة', privacy: 'سياسة الخصوصية', feedback: 'الملاحظات',
+    allChannels: 'كل القنوات', loadingGlobe: 'جاري تحميل الكرة', globeError: 'تعذر تحميل الكرة',
+    channelsWillAppear: 'ستظهر القنوات هنا بعد اختيار دولة من الكرة.',
+    radioWillAppear: 'ستظهر محطات الراديو هنا بعد اختيار دولة من الكرة.',
+    clickCountryChannels: 'اضغط على دولة في الكرة لتحميل القنوات',
+    clickCountryRadio: 'اضغط على دولة في الكرة لتحميل الراديو',
+    chooseCountryRadioFirst: 'اختر دولة أولاً ثم فلتر محطات الراديو',
+    chooseCountryRadioFirstBody: 'اختر دولة أولاً لتصفح محطات الراديو حسب التصنيف.',
+    noFavorites: 'لا توجد مفضلة بعد. اضغط النجمة على أي قناة لحفظها هنا.',
+    noMatch: 'لا توجد {label} تطابق الفلتر الحالي.', removeFavorite: 'إزالة من المفضلة',
+    addFavorite: 'إضافة إلى المفضلة', play: 'تشغيل', showMore: 'عرض {count} إضافية من {remaining}',
+    noChannelsAvailable: 'لا توجد قنوات متاحة للفلتر الحالي.',
+    noRadioAvailable: 'لا توجد محطات راديو متاحة للفلتر الحالي.',
+    loadingChannelsAll: 'جاري تحميل القنوات من كل الدول',
+    loadingCategoryAll: 'جاري تحميل قنوات {label} من كل الدول',
+    couldNotLoadChannels: 'تعذر تحميل القنوات الآن',
+    channelsCouldNotLoad: 'تعذر تحميل القنوات الآن.',
+    couldNotLoadGlobal: 'تعذر تحميل القنوات العالمية الآن',
+    globalCouldNotLoad: 'تعذر تحميل القنوات العالمية الآن.',
+    loadingMediaForCountry: 'جاري تحميل {label} لهذه الدولة', selectedFromGlobe: 'تم الاختيار من الكرة',
+    mediaAvailable: '{count} {label} متاحة', noMediaFound: 'لم يتم العثور على {label} لهذه الدولة',
+    noMediaFoundDetail: 'لم يتم العثور على {label} مجانية قابلة للتشغيل لهذه الدولة حالياً.',
+    tvActive: 'تم تفعيل وضع TV.', radioActive: 'تم تفعيل وضع الراديو.',
+    newspapersReady: 'زر الجرائد الإلكترونية جاهز. أرسل البيانات لربطه.',
+    countryUnavailable: 'هذه الدولة غير متاحة بعد.', countryLoading: 'بيانات الدولة ما زالت تُحمّل.',
+    clickDirectlyCountry: 'اضغط مباشرة على دولة.', moveCountryCircle: 'حرّك دولة إلى داخل الدائرة',
+    moveGlobe: 'حرّك الكرة', placeCountryCircle: 'ضع دولة داخل الدائرة الحمراء ثم اضغط',
+    clickGlobeLoadChannels: 'اضغط على الكرة لتحميل القنوات', clickToLoadChannels: 'اضغط لتحميل القنوات',
+    zoom: 'تكبير {percent}%', addedFavorite: 'تمت الإضافة إلى المفضلة.', removedFavorite: 'تمت الإزالة من المفضلة.',
+    favoritesFull: 'مساحة المفضلة ممتلئة.', unsafeChannel: 'رابط هذه القناة غير آمن.',
+    unsafeStream: 'رابط البث غير آمن.', loadingLiveStream: 'جاري تحميل البث المباشر...',
+    pressPlayStream: 'اضغط تشغيل لبدء هذا البث.', playerError: 'تعذر تحميل المشغل. سيتم فتح البث في تبويب جديد.',
+    loadingRadio: 'جاري تحميل {title}...', pressPlayRadio: 'اضغط تشغيل لبدء هذه المحطة.',
+    pipTvOnly: 'صورة داخل صورة متاحة لبث التلفاز.', pipUnsupported: 'متصفحك لا يدعم صورة داخل صورة.',
+    startVideoFirst: 'شغّل الفيديو أولاً ثم جرّب PiP.', globalTvOnly: 'القنوات العالمية متاحة في وضع TV.',
+    loadedStreams: 'تم تحميل {count} بث قابل للتشغيل', streamsLoaded: 'تم تحميل {count} بث قابل للتشغيل',
+    globalIndexError: 'تعذر تحميل فهرس القنوات العالمي',
+    globalIndexErrorBody: 'تعذر تحميل فهرس القنوات العالمي الآن.',
+    developerArea: 'صفحة المطوّر', developerTitle: 'مطوّر WatchNations',
+    accessCode: 'كود الدخول', enterCode: 'أدخل الكود', openDeveloper: 'فتح صفحة المطوّر',
+    realVisitors: 'الزوار الحقيقيون', totalVisits: 'إجمالي الزيارات', lastVisit: 'آخر زيارة: {date}',
+    currentCode: 'الكود الحالي', newCode: 'الكود الجديد', changeCode: 'تغيير الكود',
+    checkingCode: 'جاري التحقق من الكود...', developerOpen: 'تم فتح صفحة المطوّر.',
+    wrongCode: 'الكود غير صحيح.', savingCode: 'جاري حفظ الكود الجديد...', codeChanged: 'تم تغيير الكود بنجاح.',
+    refreshStatsError: 'تعذر تحديث الإحصائيات.', requestFailed: 'فشل الطلب.',
+    category: {
+      all: 'كل القنوات', 'top-news': 'أهم الأخبار', news: 'الأخبار', music: 'الموسيقى', sports: 'الرياضة',
+      auto: 'السيارات', animation: 'الرسوم المتحركة', business: 'الأعمال', classic: 'كلاسيكي', comedy: 'كوميديا',
+      cooking: 'الطبخ', culture: 'الثقافة', documentary: 'وثائقي', education: 'تعليم',
+      entertainment: 'ترفيه', family: 'العائلة', general: 'عام', kids: 'الأطفال',
+      legislative: 'تشريعي', lifestyle: 'نمط الحياة', movies: 'الأفلام', outdoor: 'الخارج',
+      relax: 'استرخاء', religious: 'ديني', series: 'مسلسلات', science: 'علوم', shop: 'تسوق',
+      travel: 'سفر', weather: 'الطقس', favorites: 'المفضلة'
+    }
+  },
+  it: {
+    openMenu: 'Apri menu', closeMenu: 'Chiudi menu', focusGlobe: 'Centra globo', randomCountry: 'Paese casuale',
+    search: 'Cerca', tv: 'TV', radio: 'Radio', newspapers: 'Giornali online', globeZoomControls: 'Controlli zoom del globo',
+    zoomIn: 'Avvicina', zoomOut: 'Allontana', resetZoom: 'Reimposta zoom', clickCountry: 'Clicca un paese',
+    ready: 'Pronto', readyDetail: 'Muovi il globo finché un paese entra nel cerchio rosso', fastMode: 'Modalità rapida',
+    chooseFromGlobe: 'Scegli dal globo', heroHint: 'Muovi il globo, metti un paese nel cerchio rosso e clicca.',
+    chooseCountry: 'Scegli un paese', selectCountry: 'Seleziona un paese', changeCountry: 'Cambia paese',
+    searchCountry: 'Cerca paese', loadingCountries: 'Caricamento paesi...', advertisement: 'Pubblicità',
+    selectChannel: 'Seleziona un canale', selectRadio: 'Seleziona una radio', pip: 'Picture in picture',
+    close: 'Chiudi', freeChannels: 'Canali gratis', freeRadio: 'Radio gratis', smartReady: 'Filtro intelligente pronto',
+    searchChannels: 'Cerca canali o categoria', searchRadio: 'Cerca radio, lingua o tag', explore: 'Esplora',
+    favorites: 'Preferiti', favoriteChannels: 'Canali preferiti', favoriteRadio: 'Radio preferite',
+    about: 'Informazioni', faq: 'FAQ', privacy: 'Privacy Policy', feedback: 'Feedback',
+    allChannels: 'Tutti i canali', loadingGlobe: 'Caricamento globo', globeError: 'Impossibile caricare il globo',
+    channelsWillAppear: 'I canali appariranno qui dopo aver scelto un paese dal globo.',
+    radioWillAppear: 'Le radio appariranno qui dopo aver scelto un paese dal globo.',
+    clickCountryChannels: 'Clicca un paese sul globo per caricare i canali',
+    clickCountryRadio: 'Clicca un paese sul globo per caricare le radio',
+    chooseCountryRadioFirst: 'Scegli prima un paese, poi filtra le radio',
+    chooseCountryRadioFirstBody: 'Scegli prima un paese per sfogliare le radio per categoria.',
+    noFavorites: 'Nessun preferito. Premi la stella su un canale per salvarlo qui.',
+    noMatch: 'Nessun {label} corrisponde al filtro attuale.', removeFavorite: 'Rimuovi preferito',
+    addFavorite: 'Aggiungi preferito', play: 'Riproduci', showMore: 'Mostra altri {count} di {remaining}',
+    noChannelsAvailable: 'Nessun canale disponibile per il filtro attuale.',
+    noRadioAvailable: 'Nessuna radio disponibile per il filtro attuale.',
+    loadingChannelsAll: 'Caricamento canali da tutti i paesi',
+    loadingCategoryAll: 'Caricamento canali {label} da tutti i paesi',
+    couldNotLoadChannels: 'Impossibile caricare i canali ora',
+    channelsCouldNotLoad: 'I canali non possono essere caricati ora.',
+    couldNotLoadGlobal: 'Impossibile caricare i canali globali ora',
+    globalCouldNotLoad: 'I canali globali non possono essere caricati ora.',
+    loadingMediaForCountry: 'Caricamento {label} per questo paese', selectedFromGlobe: 'Selezionato dal globo',
+    mediaAvailable: '{count} {label} disponibili', noMediaFound: 'Nessun {label} trovato per questo paese',
+    noMediaFoundDetail: 'Nessun {label} gratuito riproducibile trovato per questo paese ora.',
+    tvActive: 'Modalità TV attiva.', radioActive: 'Modalità radio attiva.',
+    newspapersReady: 'Il pulsante Giornali online è pronto. Invia i dati per collegarlo.',
+    countryUnavailable: 'Questo paese non è ancora disponibile.', countryLoading: 'I dati del paese sono ancora in caricamento.',
+    clickDirectlyCountry: 'Clicca direttamente su un paese.', moveCountryCircle: 'Muovi un paese dentro il cerchio',
+    moveGlobe: 'Muovi il globo', placeCountryCircle: 'Metti un paese nel cerchio rosso e clicca',
+    clickGlobeLoadChannels: 'Clicca il globo per caricare i canali', clickToLoadChannels: 'Clicca per caricare i canali',
+    zoom: 'Zoom {percent}%', addedFavorite: 'Aggiunto ai preferiti.', removedFavorite: 'Rimosso dai preferiti.',
+    favoritesFull: 'Archivio preferiti pieno.', unsafeChannel: 'Questo link canale non è sicuro.',
+    unsafeStream: 'Questo URL stream non è sicuro.', loadingLiveStream: 'Caricamento live stream...',
+    pressPlayStream: 'Premi play per avviare questo stream.', playerError: 'Il player video non si è caricato. Apertura in una nuova scheda.',
+    loadingRadio: 'Caricamento {title}...', pressPlayRadio: 'Premi play per avviare questa radio.',
+    pipTvOnly: 'Picture in picture disponibile per stream TV.', pipUnsupported: 'Il browser non supporta picture in picture.',
+    startVideoFirst: 'Avvia prima il video, poi prova PiP.', globalTvOnly: 'La TV globale è disponibile in modalità TV.',
+    loadedStreams: '{count} stream riproducibili caricati', streamsLoaded: '{count} stream riproducibili caricati',
+    globalIndexError: 'Impossibile caricare l’indice globale dei canali',
+    globalIndexErrorBody: 'L’indice globale dei canali non può essere caricato ora.',
+    developerArea: 'Area sviluppatore', developerTitle: 'Sviluppatore WatchNations',
+    accessCode: 'Codice accesso', enterCode: 'Inserisci codice', openDeveloper: 'Apri pagina sviluppatore',
+    realVisitors: 'Visitatori reali', totalVisits: 'Visite totali', lastVisit: 'Ultima visita: {date}',
+    currentCode: 'Codice attuale', newCode: 'Nuovo codice', changeCode: 'Cambia codice',
+    checkingCode: 'Controllo codice...', developerOpen: 'Pagina sviluppatore aperta.',
+    wrongCode: 'Codice errato.', savingCode: 'Salvataggio nuovo codice...', codeChanged: 'Codice cambiato con successo.',
+    refreshStatsError: 'Impossibile aggiornare le statistiche.', requestFailed: 'Richiesta fallita.',
+    category: {
+      all: 'Tutti i canali', 'top-news': 'Notizie principali', news: 'Notizie', music: 'Musica', sports: 'Sport',
+      auto: 'Auto', animation: 'Animazione', business: 'Business', classic: 'Classici', comedy: 'Commedia',
+      cooking: 'Cucina', culture: 'Cultura', documentary: 'Documentari', education: 'Educazione',
+      entertainment: 'Intrattenimento', family: 'Famiglia', general: 'Generale', kids: 'Bambini',
+      legislative: 'Legislativo', lifestyle: 'Lifestyle', movies: 'Film', outdoor: 'Outdoor',
+      relax: 'Relax', religious: 'Religione', series: 'Serie', science: 'Scienza', shop: 'Shopping',
+      travel: 'Viaggi', weather: 'Meteo', favorites: 'Preferiti'
+    }
+  }
+};
+
+const savedLanguage = localStorage.getItem('watchnations:language');
+let currentLanguage = translations[savedLanguage] ? savedLanguage : 'en';
+const newspaperText = {
+  en: {
+    title: 'E-Newspapers', select: 'Select a Country', search: 'Search newspapers, source, or category',
+    hint: 'Choose a country to browse electronic newspapers and official sources.',
+    categories: 'Newspaper categories', all: 'All', politics: 'Politics', economy: 'Economy', society: 'Society', sports: 'Sports', technology: 'Technology & Crypto',
+    loading: 'Loading e-newspapers', loaded: '{count} sources available', empty: 'No newspapers match the current filter.',
+    read: 'Read here', open: 'Open website', official: 'Official', source: 'Source', readerTitle: 'Newspaper reader',
+    frameNote: 'Some websites block embedded reading. Use Open website if the page does not appear.'
+  },
+  es: {
+    title: 'Periódicos digitales', select: 'Selecciona un país', search: 'Buscar periódicos, fuente o categoría',
+    hint: 'Elige un país para explorar periódicos digitales y fuentes oficiales.',
+    categories: 'Categorías', all: 'Todo', politics: 'Política', economy: 'Economía', society: 'Sociedad', sports: 'Deportes', technology: 'Tecnología y cripto',
+    loading: 'Cargando periódicos', loaded: '{count} fuentes disponibles', empty: 'No hay periódicos que coincidan con el filtro.',
+    read: 'Leer aquí', open: 'Abrir sitio', official: 'Oficial', source: 'Fuente', readerTitle: 'Lector de periódico',
+    frameNote: 'Algunos sitios bloquean la lectura integrada. Usa Abrir sitio si la página no aparece.'
+  },
+  fr: {
+    title: 'Journaux en ligne', select: 'Sélectionner un pays', search: 'Rechercher journaux, source ou catégorie',
+    hint: 'Choisissez un pays pour parcourir les journaux en ligne et les sources officielles.',
+    categories: 'Catégories', all: 'Tout', politics: 'Politique', economy: 'Économie', society: 'Société', sports: 'Sports', technology: 'Technologie et crypto',
+    loading: 'Chargement des journaux', loaded: '{count} sources disponibles', empty: 'Aucun journal ne correspond au filtre.',
+    read: 'Lire ici', open: 'Ouvrir le site', official: 'Officiel', source: 'Source', readerTitle: 'Lecteur de journal',
+    frameNote: 'Certains sites bloquent la lecture intégrée. Utilisez Ouvrir le site si la page ne s’affiche pas.'
+  },
+  ar: {
+    title: 'جرائد إلكترونية', select: 'اختر دولة', search: 'ابحث عن جريدة أو مصدر أو تصنيف',
+    hint: 'اختر دولة لتصفح الجرائد الإلكترونية والمصادر الرسمية.',
+    categories: 'تصنيفات الجرائد', all: 'الكل', politics: 'السياسة', economy: 'الاقتصاد', society: 'المجتمع', sports: 'الرياضة', technology: 'التكنولوجيا والعملات الرقمية',
+    loading: 'جاري تحميل الجرائد الإلكترونية', loaded: '{count} مصدر متاح', empty: 'لا توجد جرائد تطابق الفلتر الحالي.',
+    read: 'تصفح هنا', open: 'فتح الموقع', official: 'رسمي', source: 'مصدر', readerTitle: 'قارئ الجريدة',
+    frameNote: 'بعض المواقع تمنع العرض داخل الموقع. استخدم فتح الموقع إذا لم تظهر الصفحة.'
+  },
+  it: {
+    title: 'Giornali online', select: 'Seleziona un paese', search: 'Cerca giornali, fonte o categoria',
+    hint: 'Scegli un paese per sfogliare giornali online e fonti ufficiali.',
+    categories: 'Categorie', all: 'Tutto', politics: 'Politica', economy: 'Economia', society: 'Società', sports: 'Sport', technology: 'Tecnologia e cripto',
+    loading: 'Caricamento giornali', loaded: '{count} fonti disponibili', empty: 'Nessun giornale corrisponde al filtro.',
+    read: 'Leggi qui', open: 'Apri sito', official: 'Ufficiale', source: 'Fonte', readerTitle: 'Lettore giornale',
+    frameNote: 'Alcuni siti bloccano la lettura integrata. Usa Apri sito se la pagina non appare.'
+  }
+};
+
+const newspaperLocale = {
+  en: {
+    categoryNames: {
+      all: 'all sources', politics: 'politics', economy: 'economy', society: 'society', sports: 'sports', technology: 'technology and crypto'
+    },
+    description: '{name} is a {category} source from {country}. Open the official website or read it inside WatchNations when supported.',
+    sourceMeta: 'Online source'
+  },
+  es: {
+    categoryNames: {
+      all: 'todas las fuentes', politics: 'politica', economy: 'economia', society: 'sociedad', sports: 'deportes', technology: 'tecnologia y cripto'
+    },
+    description: '{name} es una fuente de {category} de {country}. Abre el sitio oficial o leelo dentro de WatchNations cuando sea compatible.',
+    sourceMeta: 'Fuente online'
+  },
+  fr: {
+    categoryNames: {
+      all: 'toutes les sources', politics: 'politique', economy: 'economie', society: 'societe', sports: 'sports', technology: 'technologie et crypto'
+    },
+    description: '{name} est une source {category} de {country}. Ouvrez le site officiel ou lisez-la dans WatchNations lorsque le site le permet.',
+    sourceMeta: 'Source en ligne'
+  },
+  ar: {
+    categoryNames: {
+      all: 'كل المصادر', politics: 'السياسة', economy: 'الاقتصاد', society: 'المجتمع', sports: 'الرياضة', technology: 'التكنولوجيا والعملات الرقمية'
+    },
+    description: '{name} مصدر ضمن {category} من {country}. يمكنك فتح الموقع الرسمي أو تصفحه داخل WatchNations عند توفر ذلك.',
+    sourceMeta: 'مصدر إلكتروني'
+  },
+  it: {
+    categoryNames: {
+      all: 'tutte le fonti', politics: 'politica', economy: 'economia', society: 'societa', sports: 'sport', technology: 'tecnologia e cripto'
+    },
+    description: '{name} e una fonte di {category} da {country}. Apri il sito ufficiale o leggilo dentro WatchNations quando supportato.',
+    sourceMeta: 'Fonte online'
+  }
+};
+
+function nt(key, values = {}) {
+  const value = newspaperText[currentLanguage]?.[key] || newspaperText.en[key] || key;
+  return value.replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '');
+}
+
+function t(key, values = {}) {
+  const value = key.split('.').reduce((entry, part) => entry?.[part], translations[currentLanguage])
+    ?? key.split('.').reduce((entry, part) => entry?.[part], translations.en)
+    ?? key;
+  if (typeof value !== 'string') return key;
+  return value.replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '');
+}
+
+function tCategory(id) {
+  return translations[currentLanguage].category?.[id] || translations.en.category[id] || id;
+}
+
+function mediaTypeLabel(type = appState.mediaMode) {
+  const labels = {
+    en: { tv: 'channels', radio: 'radio stations' },
+    es: { tv: 'canales', radio: 'emisoras' },
+    fr: { tv: 'chaînes', radio: 'radios' },
+    ar: { tv: 'قنوات', radio: 'محطات راديو' },
+    it: { tv: 'canali', radio: 'radio' }
+  };
+  return labels[currentLanguage]?.[type] || labels.en[type] || labels.en.tv;
+}
+
+function infoPageContent(page) {
+  const pages = {
+    about: {
+      en: ['About WatchNations', ['WatchNations helps you watch TV channels by country, discover international TV channels, and browse global media using a clean interface and an interactive 3D globe.', 'Use WatchNations for free TV with no account required, random TV channel discovery, radio stations worldwide, electronic newspapers, and a global TV channel list free to explore.', 'Arabic viewers can discover مشاهدة قنوات عربية بث مباشر مجانا, قنوات عربية بث مباشر بدون اشتراك, قنوات سعودية بث مباشر, قنوات مصرية بث مباشر مجاني, and قنوات اماراتية اونلاين.', 'The platform does not host streams. It organizes publicly available links and helps users explore channels from different cultures.', 'For channel suggestions, broken links, or copyright requests, contact lindaraymane@gmail.com.']],
+      es: ['Acerca de WatchNations', ['WatchNations te ayuda a descubrir TV en vivo, radio y medios globales gratis por país con una interfaz limpia y un globo 3D interactivo.', 'La plataforma no aloja streams. Organiza enlaces públicos y ayuda a explorar canales de distintas culturas.', 'Para sugerencias, enlaces rotos o solicitudes de copyright, contacta con lindaraymane@gmail.com.']],
+      fr: ['À propos de WatchNations', ['WatchNations vous aide à découvrir la TV en direct gratuite, la radio et les médias mondiaux par pays avec une interface claire et un globe 3D interactif.', 'La plateforme n’héberge pas les streams. Elle organise des liens publics et aide à explorer des chaînes de différentes cultures.', 'Pour les suggestions, liens cassés ou demandes de droits, contactez lindaraymane@gmail.com.']],
+      ar: ['حول WatchNations', ['يساعدك WatchNations على مشاهدة القنوات حسب الدولة واكتشاف قنوات دولية عبر كرة أرضية ثلاثية الأبعاد وواجهة سلسة.', 'يمكنك استخدام الموقع من أجل مشاهدة قنوات عربية بث مباشر مجانا، قنوات عربية بث مباشر بدون اشتراك، قنوات سعودية بث مباشر، قنوات مصرية بث مباشر مجاني، وقنوات اماراتية اونلاين.', 'يدعم الموقع أيضاً الراديو العالمي، الجرائد الإلكترونية، واكتشاف قناة عشوائية بدون إنشاء حساب.', 'الموقع لا يستضيف البثوث، بل ينظم روابط عامة متاحة ويساعد المستخدمين على استكشاف قنوات من ثقافات مختلفة.', 'للاقتراحات أو الروابط المعطلة أو طلبات الحقوق تواصل عبر lindaraymane@gmail.com.']],
+      it: ['Informazioni su WatchNations', ['WatchNations ti aiuta a scoprire TV live gratuita, radio e media globali per paese con un’interfaccia pulita e un globo 3D interattivo.', 'La piattaforma non ospita stream. Organizza link pubblici e aiuta a esplorare canali di culture diverse.', 'Per suggerimenti, link non funzionanti o richieste copyright, contatta lindaraymane@gmail.com.']]
+    },
+    privacy: {
+      en: ['Privacy Policy', ['WatchNations does not require accounts, subscriptions, or personal profiles to browse available media.', 'Favorites are stored locally in your browser. Advertising or analytics partners may use cookies according to their own policies.', 'You can manage cookies and local storage from your browser settings at any time.']],
+      es: ['Política de privacidad', ['WatchNations no requiere cuentas, suscripciones ni perfiles personales para navegar por los medios disponibles.', 'Los favoritos se guardan localmente en tu navegador. Los socios de publicidad o analítica pueden usar cookies según sus políticas.', 'Puedes gestionar cookies y almacenamiento local desde la configuración del navegador en cualquier momento.']],
+      fr: ['Politique de confidentialité', ['WatchNations ne demande pas de compte, d’abonnement ni de profil personnel pour parcourir les médias disponibles.', 'Les favoris sont stockés localement dans votre navigateur. Les partenaires publicitaires ou analytiques peuvent utiliser des cookies selon leurs politiques.', 'Vous pouvez gérer les cookies et le stockage local dans les paramètres de votre navigateur à tout moment.']],
+      ar: ['سياسة الخصوصية', ['لا يتطلب WatchNations حسابات أو اشتراكات أو ملفات شخصية لتصفح الوسائط المتاحة.', 'تُحفظ المفضلة محلياً في متصفحك. وقد تستخدم خدمات الإعلانات أو التحليلات ملفات تعريف الارتباط حسب سياساتها.', 'يمكنك إدارة الكوكيز والتخزين المحلي من إعدادات المتصفح في أي وقت.']],
+      it: ['Privacy Policy', ['WatchNations non richiede account, abbonamenti o profili personali per esplorare i media disponibili.', 'I preferiti sono salvati localmente nel browser. Partner pubblicitari o analitici possono usare cookie secondo le proprie policy.', 'Puoi gestire cookie e archiviazione locale dalle impostazioni del browser in qualsiasi momento.']]
+    },
+    faq: {
+      en: ['Frequently Asked Questions', ['Is WatchNations free? Yes. It is free TV with no account required.', 'How do I watch? Choose a country on the interactive 3D globe, browse categories, then select a channel, radio station, or e-newspaper.', 'Can I discover something random? Yes. WatchNations supports random TV channel discovery.', 'Why are some channels unavailable? External streams can change, go offline, or be restricted by region.']],
+      es: ['Preguntas frecuentes', ['¿WatchNations es gratis? Sí, es gratis y no requiere registro.', '¿Cómo veo contenido? Elige un país en el globo, navega por categorías y selecciona un canal o emisora.', '¿Por qué algunos canales no están disponibles? Los streams externos pueden cambiar, desconectarse o tener restricciones regionales.']],
+      fr: ['Questions fréquentes', ['WatchNations est-il gratuit ? Oui, il est gratuit et ne demande pas d’inscription.', 'Comment regarder ? Choisissez un pays sur le globe, parcourez les catégories, puis sélectionnez une chaîne ou une radio.', 'Pourquoi certaines chaînes sont indisponibles ? Les streams externes peuvent changer, être hors ligne ou limités par région.']],
+      ar: ['الأسئلة الشائعة', ['هل WatchNations مجاني؟ نعم، مشاهدة مجانية بدون إنشاء حساب.', 'كيف أشاهد؟ اختر دولة من الكرة ثلاثية الأبعاد، تصفح التصنيفات، ثم اختر قناة أو محطة راديو أو جريدة إلكترونية.', 'هل يدعم الموقع القنوات العربية؟ نعم، يمكن استهداف مشاهدة قنوات عربية بث مباشر مجانا وقنوات عربية بث مباشر بدون اشتراك حسب الدولة.', 'لماذا بعض القنوات غير متاحة؟ الروابط الخارجية قد تتغير أو تتوقف أو تكون محدودة حسب المنطقة.']],
+      it: ['Domande frequenti', ['WatchNations è gratis? Sì, è gratuito e non richiede registrazione.', 'Come guardo? Scegli un paese sul globo, esplora le categorie e seleziona un canale o una radio.', 'Perché alcuni canali non sono disponibili? Gli stream esterni possono cambiare, andare offline o essere limitati per regione.']]
+    },
+    feedback: {
+      en: ['Tell Us What You Think', ['Your feedback helps improve WatchNations. Send channel suggestions, broken links, feature ideas, or copyright requests to lindaraymane@gmail.com.', 'Please include the channel name, page or stream link, and a short explanation so we can review it quickly.']],
+      es: ['Dinos qué opinas', ['Tus comentarios ayudan a mejorar WatchNations. Envía sugerencias, enlaces rotos, ideas o solicitudes de copyright a lindaraymane@gmail.com.', 'Incluye el nombre del canal, la página o enlace del stream y una breve explicación para revisarlo rápido.']],
+      fr: ['Dites-nous ce que vous pensez', ['Vos retours aident à améliorer WatchNations. Envoyez suggestions, liens cassés, idées ou demandes de droits à lindaraymane@gmail.com.', 'Incluez le nom de la chaîne, la page ou le lien du stream et une courte explication pour accélérer l’examen.']],
+      ar: ['أخبرنا برأيك', ['ملاحظاتك تساعد على تحسين WatchNations. أرسل اقتراحات القنوات أو الروابط المعطلة أو أفكار الميزات أو طلبات الحقوق إلى lindaraymane@gmail.com.', 'يرجى تضمين اسم القناة ورابط الصفحة أو البث وشرح قصير حتى نراجع الطلب بسرعة.']],
+      it: ['Dicci cosa ne pensi', ['Il tuo feedback aiuta a migliorare WatchNations. Invia suggerimenti, link rotti, idee o richieste copyright a lindaraymane@gmail.com.', 'Includi nome del canale, pagina o link stream e una breve spiegazione per una verifica rapida.']]
+    }
+  };
+  return pages[page]?.[currentLanguage] || pages[page]?.en;
+}
+
+function renderInfoPage(page) {
+  const modal = document.getElementById(`${page}Modal`);
+  const copy = modal?.querySelector('.about-copy');
+  const content = infoPageContent(page);
+  if (!copy || !content) return;
+  const [title, paragraphs] = content;
+  copy.innerHTML = `<h2 id="${page}Title">${escapeHtml(title)}</h2>${paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`).join('')}`;
+}
+
+function setLanguage(language) {
+  if (!translations[language]) return;
+  currentLanguage = language;
+  localStorage.setItem('watchnations:language', language);
+  applyLanguage();
+}
+
+function applyLanguage() {
+  const rtl = currentLanguage === 'ar';
+  document.documentElement.lang = currentLanguage;
+  document.documentElement.dir = rtl ? 'rtl' : 'ltr';
+  document.body.classList.toggle('localized-rtl', rtl);
+
+  document.getElementById('menuButton').setAttribute('aria-label', t('openMenu'));
+  document.getElementById('closeMenu').setAttribute('aria-label', t('closeMenu'));
+  document.getElementById('focusGlobeButton').title = t('focusGlobe');
+  document.getElementById('randomButton').title = t('randomCountry');
+  document.getElementById('searchFocusButton').title = t('search');
+  document.getElementById('tvMode').textContent = t('tv');
+  document.getElementById('radioMode').textContent = t('radio');
+  document.getElementById('newspapersMode').textContent = t('newspapers');
+  document.getElementById('zoomInButton').title = t('zoomIn');
+  document.getElementById('zoomOutButton').title = t('zoomOut');
+  document.getElementById('zoomResetButton').title = t('resetZoom');
+  document.getElementById('openPanelHint').querySelector('span').textContent = t('chooseCountry');
+  document.getElementById('changeCountryButton').textContent = t('changeCountry');
+  countrySearch.placeholder = t('searchCountry');
+  document.querySelector('.ad-slot-panel')?.setAttribute('aria-label', t('advertisement'));
+  document.querySelector('.ad-slot-panel > span').textContent = t('advertisement');
+  pipPlayerButton.title = t('pip');
+  closePlayerButton.title = t('close');
+  document.querySelectorAll('.about-close, .developer-close').forEach((button) => {
+    button.title = t('close');
+  });
+
+  document.querySelector('.nav-title').textContent = t('explore');
+  document.querySelectorAll('.nav-link').forEach((link) => {
+    const label = link.querySelector('span');
+    if (!label) return;
+    if (link.dataset.category) label.textContent = tCategory(link.dataset.category);
+    if (link.dataset.action) label.textContent = t(link.dataset.action);
+  });
+
+  document.querySelector('.hero-card span').innerHTML = `${icons.bolt} ${t('fastMode')}`;
+  document.querySelector('.hero-card small').textContent = t('heroHint');
+  if (!appState.selectedCountry && !appState.globalMode) {
+    document.getElementById('countryTitle').textContent = t('selectCountry');
+    document.getElementById('heroCountry').textContent = t('chooseFromGlobe');
+    document.getElementById('aiInsight').textContent = appState.mediaMode === 'radio' ? t('clickCountryRadio') : t('clickCountryChannels');
+    document.getElementById('channelGrid').innerHTML = `<p class="muted">${appState.mediaMode === 'radio' ? t('radioWillAppear') : t('channelsWillAppear')}</p>`;
+    setGlobeStatus(t('ready'), t('readyDetail'));
+  }
+
+  updateMediaLabels();
+  applyDeveloperLanguage();
+  document.getElementById('newspaperReaderTitle').textContent = nt('readerTitle');
+  document.getElementById('newspaperReaderOpen').textContent = nt('open');
+  document.getElementById('newspaperFrame').title = nt('readerTitle');
+  document.querySelector('.newspaper-reader p').textContent = nt('frameNote');
+  if (appState.mediaMode === 'newspapers') {
+    const newspaperCountryName = appState.selectedNewspaperCountry
+      ? getNewspaperCountryDisplayName(appState.selectedNewspaperCountry)
+      : null;
+    document.getElementById('heroCountry').textContent = newspaperCountryName || nt('title');
+    document.getElementById('countryTitle').textContent = newspaperCountryName || nt('select');
+  }
+  renderCountries();
+  renderChannels();
+  ['about', 'privacy', 'faq', 'feedback'].forEach(renderInfoPage);
+}
+
 const categoryKeywordRules = [
   ['top-news', ['top news', 'breaking', 'breaking news', 'headline', 'headlines', 'world news', '24/7 news', '24x7 news', 'live news']],
   ['news', ['news', 'noticias', 'actualite', 'actualites', 'nachrichten', 'haber', 'journal', 'cnn', 'bbc', 'al jazeera', 'france 24', 'euronews']],
@@ -261,12 +896,17 @@ const appState = {
   selectedCountry: null,
   mediaMode: 'tv',
   selectedCategory: 'all',
+  newspaperCategory: 'all',
   globalMode: false,
-  renderLimit: 700,
+  renderLimit: INITIAL_CHANNEL_RENDER_LIMIT,
   hoveredCountry: null,
   query: '',
   channelQuery: '',
   currentChannels: [],
+  newspapers: [],
+  newspaperCountries: [],
+  currentNewspapers: [],
+  selectedNewspaperCountry: null,
   renderedChannels: [],
   aiChannels: null,
   aiInsight: '',
@@ -290,66 +930,75 @@ const appState = {
 document.getElementById('root').innerHTML = `
   <main class="shell">
     <header class="topbar">
-      <button class="icon-button" id="menuButton" aria-label="Open menu">${icons.menu}</button>
+      <button class="icon-button" id="menuButton" aria-label="${t('openMenu')}">${icons.menu}</button>
       <div class="brand"><span class="brand-mark">${brandLogo}</span><strong><span class="brand-watch">Watch</span>Nations</strong></div>
       <div class="top-actions">
-        <button class="icon-button" id="focusGlobeButton" title="Focus globe">${icons.globe}</button>
-        <button class="icon-button" id="randomButton" title="Random country">${icons.spark}</button>
-        <button class="icon-button" id="searchFocusButton" title="Search">${icons.search}</button>
+        <label class="language-picker" title="Language">
+          <select id="languageSelect" aria-label="Language">
+            ${supportedLanguages.map(([code, label]) => `<option value="${code}" ${code === currentLanguage ? 'selected' : ''}>${label}</option>`).join('')}
+          </select>
+        </label>
+        <button class="icon-button" id="focusGlobeButton" title="${t('focusGlobe')}">${icons.globe}</button>
+        <button class="icon-button" id="randomButton" title="${t('randomCountry')}">${icons.spark}</button>
+        <button class="icon-button" id="searchFocusButton" title="${t('search')}">${icons.search}</button>
       </div>
     </header>
 
     <aside class="left-nav" id="leftNav">
-      <button class="close-menu" id="closeMenu" aria-label="Close menu">${icons.close}</button>
+      <button class="close-menu" id="closeMenu" aria-label="${t('closeMenu')}">${icons.close}</button>
       <div class="nav-section">
         ${primaryNavItems.map(([action, label, icon, category]) => (
           category
-            ? `<a class="nav-link" data-category="${category}">${icons[icon]} <span>${label}</span></a>`
-            : `<a class="nav-link" data-action="${action}">${icons[icon]} <span>${label}</span></a>`
+            ? `<a class="nav-link" data-category="${category}">${icons[icon]} <span>${tCategory(category)}</span></a>`
+            : `<a class="nav-link" data-action="${action}">${icons[icon]} <span>${t(action)}</span></a>`
         )).join('')}
       </div>
-      <div class="nav-title">Explore</div>
+      <div class="nav-title">${t('explore')}</div>
       <div class="nav-section nav-section-explore">
-        ${categories.map(([id, label, icon]) => `<a class="nav-link" data-category="${id}">${icons[icon]} <span>${label}</span></a>`).join('')}
+        ${categories.map(([id, label, icon]) => `<a class="nav-link" data-category="${id}">${icons[icon]} <span>${tCategory(id)}</span></a>`).join('')}
       </div>
       <div class="nav-section nav-section-footer">
-        ${footerNavItems.map(([action, label, icon]) => `<a class="nav-link" data-action="${action}">${icons[icon]} <span>${label}</span></a>`).join('')}
+        ${footerNavItems.map(([action, label, icon]) => `<a class="nav-link" data-action="${action}">${icons[icon]} <span>${t(action)}</span></a>`).join('')}
       </div>
     </aside>
 
     <section class="hero">
-      <div class="mode-switch"><button class="active" id="tvMode">TV</button><button id="radioMode">Radio</button></div>
+      <div class="mode-switch">
+        <button class="active" id="tvMode">${t('tv')}</button>
+        <button id="radioMode">${t('radio')}</button>
+        <button id="newspapersMode">${t('newspapers')}</button>
+      </div>
       <div class="globe-stage" id="globeStage"></div>
-      <div class="globe-controls" aria-label="Globe zoom controls">
-        <button class="icon-button" id="zoomInButton" title="Zoom in">+</button>
-        <button class="icon-button" id="zoomOutButton" title="Zoom out">-</button>
-        <button class="icon-button" id="zoomResetButton" title="Reset zoom">${icons.globe}</button>
+      <div class="globe-controls" aria-label="${t('globeZoomControls')}">
+        <button class="icon-button" id="zoomInButton" title="${t('zoomIn')}">+</button>
+        <button class="icon-button" id="zoomOutButton" title="${t('zoomOut')}">-</button>
+        <button class="icon-button" id="zoomResetButton" title="${t('resetZoom')}">${icons.globe}</button>
       </div>
-      <div class="globe-label" id="globeLabel">Click a country</div>
+      <div class="globe-label" id="globeLabel">${t('clickCountry')}</div>
       <div class="globe-aim" id="globeAim"></div>
-      <div class="globe-status" id="globeStatus"><strong>Ready</strong><span>Move the globe until a country is inside the red circle</span></div>
+      <div class="globe-status" id="globeStatus"><strong>${t('ready')}</strong><span>${t('readyDetail')}</span></div>
       <div class="hero-card">
-        <span>${icons.bolt} Fast mode</span>
-        <strong id="heroCountry">Choose from the globe</strong>
-        <small>Move the globe, place a country in the red circle, then click.</small>
+        <span>${icons.bolt} ${t('fastMode')}</span>
+        <strong id="heroCountry">${t('chooseFromGlobe')}</strong>
+        <small>${t('heroHint')}</small>
       </div>
-      <button class="hint" id="openPanelHint"><span>Choose a country</span>${icons.arrow}</button>
+      <button class="hint" id="openPanelHint"><span>${t('chooseCountry')}</span>${icons.arrow}</button>
     </section>
 
     <aside class="country-panel" id="countryPanel">
       <div class="panel-head">
-        <div><small>WatchNations</small><h1 id="countryTitle">Select a Country</h1></div>
+        <div><small>WatchNations</small><h1 id="countryTitle">${t('selectCountry')}</h1></div>
         <div class="panel-actions">
-          <button class="change-country" id="changeCountryButton">Change country</button>
+          <button class="change-country" id="changeCountryButton">${t('changeCountry')}</button>
           <strong id="clock"></strong>
         </div>
       </div>
       <section class="country-picker" id="countryPicker">
-        <label class="search-box">${icons.search}<input id="countrySearch" placeholder="Search country" /></label>
-        <div class="country-list" id="countryList"><p class="muted">Loading countries...</p></div>
+        <label class="search-box">${icons.search}<input id="countrySearch" placeholder="${t('searchCountry')}" /></label>
+        <div class="country-list" id="countryList"><p class="muted">${t('loadingCountries')}</p></div>
       </section>
-      <section class="ad-slot ad-slot-panel" aria-label="Advertisement">
-        <span>Advertisement</span>
+      <section class="ad-slot ad-slot-panel" aria-label="${t('advertisement')}">
+        <span>${t('advertisement')}</span>
         <ins class="adsbygoogle"
           style="display:block"
           data-ad-client="ca-pub-3496611324359492"
@@ -360,20 +1009,29 @@ document.getElementById('root').innerHTML = `
       <div class="channels">
         <section class="player-panel" id="playerPanel">
           <div class="player-head">
-            <strong id="playerTitle">Select a channel</strong>
-            <button class="mini-text-button" id="pipPlayerButton" title="Picture in picture">PiP</button>
-            <button class="mini-button" id="closePlayerButton" title="Close player">${icons.close}</button>
+            <strong id="playerTitle">${t('selectChannel')}</strong>
+            <button class="mini-text-button" id="pipPlayerButton" title="${t('pip')}">PiP</button>
+            <button class="mini-button" id="closePlayerButton" title="${t('close')}">${icons.close}</button>
           </div>
           <video id="livePlayer" class="video-js vjs-default-skin" controls preload="none" playsinline></video>
           <audio id="radioPlayer" controls preload="none"></audio>
         </section>
+        <section class="newspaper-reader" id="newspaperReader" aria-hidden="true">
+          <div class="newspaper-reader-head">
+            <strong id="newspaperReaderTitle">${nt('readerTitle')}</strong>
+            <a class="mini-text-button" id="newspaperReaderOpen" target="_blank" rel="noopener noreferrer">${nt('open')}</a>
+            <button class="mini-button" id="closeNewspaperReader" title="${t('close')}">${icons.close}</button>
+          </div>
+          <p>${nt('frameNote')}</p>
+          <iframe id="newspaperFrame" title="${nt('readerTitle')}" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+        </section>
         <div class="channels-head">
-          <div><h2 id="mediaTitle">Free Channels</h2><small id="aiInsight">Smart filter is ready</small></div>
+          <div><h2 id="mediaTitle">${t('freeChannels')}</h2><small id="aiInsight">${t('smartReady')}</small></div>
           <div class="channels-tools">
             <span id="channelCount">0</span>
           </div>
         </div>
-        <label class="search-box channel-search">${icons.search}<input id="channelSearch" placeholder="Search channels or category" /></label>
+        <label class="search-box channel-search">${icons.search}<input id="channelSearch" placeholder="${t('searchChannels')}" /></label>
         <div class="channel-grid" id="channelGrid"></div>
       </div>
     </aside>
@@ -565,6 +1223,39 @@ document.getElementById('root').innerHTML = `
       </div>
     </section>
   </div>
+  <div class="developer-modal" id="developerModal" aria-hidden="true">
+    <div class="developer-backdrop" data-close-developer></div>
+    <section class="developer-dialog" role="dialog" aria-modal="true" aria-labelledby="developerTitle" lang="en" dir="ltr">
+      <button class="mini-button developer-close" id="developerCloseButton" title="Close">${icons.close}</button>
+      <div class="developer-copy">
+        <div class="developer-kicker">Developer Area</div>
+        <h2 id="developerTitle">WatchNations Developer</h2>
+        <form class="developer-login" id="developerLoginForm">
+          <label>Access code<input id="developerPassword" type="password" autocomplete="current-password" placeholder="Enter code" /></label>
+          <button class="developer-primary" type="submit">Open developer page</button>
+        </form>
+        <section class="developer-panel" id="developerPanel" hidden>
+          <div class="developer-stats">
+            <div>
+              <small>Real visitors</small>
+              <strong id="developerVisitors">0</strong>
+            </div>
+            <div>
+              <small>Total visits</small>
+              <strong id="developerTotalVisits">0</strong>
+            </div>
+          </div>
+          <p class="developer-meta" id="developerLastVisit">Last visit: -</p>
+          <form class="developer-code-form" id="developerCodeForm">
+            <label>Current code<input id="developerCurrentCode" type="password" autocomplete="current-password" /></label>
+            <label>New code<input id="developerNewCode" type="password" autocomplete="new-password" minlength="4" /></label>
+            <button class="developer-primary" type="submit">Change code</button>
+          </form>
+        </section>
+        <p class="developer-message" id="developerMessage" aria-live="polite"></p>
+      </div>
+    </section>
+  </div>
 `;
 
 const leftNav = document.getElementById('leftNav');
@@ -572,10 +1263,14 @@ const menuButton = document.getElementById('menuButton');
 const closeMenu = document.getElementById('closeMenu');
 const countrySearch = document.getElementById('countrySearch');
 const channelSearch = document.getElementById('channelSearch');
+const languageSelect = document.getElementById('languageSelect');
+const countryList = document.getElementById('countryList');
+const channelGrid = document.getElementById('channelGrid');
 const countryPanel = document.getElementById('countryPanel');
 const changeCountryButton = document.getElementById('changeCountryButton');
 const closePlayerButton = document.getElementById('closePlayerButton');
 const pipPlayerButton = document.getElementById('pipPlayerButton');
+const closeNewspaperReaderButton = document.getElementById('closeNewspaperReader');
 const aboutModal = document.getElementById('aboutModal');
 const aboutCloseButton = document.getElementById('aboutCloseButton');
 const privacyModal = document.getElementById('privacyModal');
@@ -584,6 +1279,10 @@ const faqModal = document.getElementById('faqModal');
 const faqCloseButton = document.getElementById('faqCloseButton');
 const feedbackModal = document.getElementById('feedbackModal');
 const feedbackCloseButton = document.getElementById('feedbackCloseButton');
+const developerModal = document.getElementById('developerModal');
+const developerCloseButton = document.getElementById('developerCloseButton');
+const developerLoginForm = document.getElementById('developerLoginForm');
+const developerCodeForm = document.getElementById('developerCodeForm');
 
 menuButton.addEventListener('click', () => leftNav.classList.toggle('open'));
 closeMenu.addEventListener('click', () => leftNav.classList.remove('open'));
@@ -596,6 +1295,8 @@ document.getElementById('randomButton').addEventListener('click', selectRandomCo
 document.getElementById('openPanelHint').addEventListener('click', revealCountryPanelIfStacked);
 document.getElementById('radioMode').addEventListener('click', () => setMediaMode('radio'));
 document.getElementById('tvMode').addEventListener('click', () => setMediaMode('tv'));
+document.getElementById('newspapersMode').addEventListener('click', () => setMediaMode('newspapers'));
+languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
 makePlayerPanelDraggable();
 changeCountryButton.addEventListener('click', () => {
   countryPanel.classList.remove('channels-only');
@@ -603,6 +1304,7 @@ changeCountryButton.addEventListener('click', () => {
 });
 closePlayerButton.addEventListener('click', closePlayer);
 pipPlayerButton.addEventListener('click', requestPlayerPictureInPicture);
+closeNewspaperReaderButton.addEventListener('click', closeNewspaperReader);
 aboutCloseButton.addEventListener('click', closeAboutModal);
 aboutModal.addEventListener('click', (event) => {
   if (event.target.closest('[data-close-about]')) closeAboutModal();
@@ -619,24 +1321,78 @@ feedbackCloseButton.addEventListener('click', closeFeedbackModal);
 feedbackModal.addEventListener('click', (event) => {
   if (event.target.closest('[data-close-feedback]')) closeFeedbackModal();
 });
+developerCloseButton.addEventListener('click', closeDeveloperModal);
+developerModal.addEventListener('click', (event) => {
+  if (event.target.closest('[data-close-developer]')) closeDeveloperModal();
+});
+developerLoginForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  loginDeveloper();
+});
+developerCodeForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  changeDeveloperCode();
+});
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'F10') {
+    event.preventDefault();
+    openDeveloperModal();
+  }
   if (event.key === 'Escape' && aboutModal.classList.contains('open')) closeAboutModal();
   if (event.key === 'Escape' && privacyModal.classList.contains('open')) closePrivacyModal();
   if (event.key === 'Escape' && faqModal.classList.contains('open')) closeFaqModal();
   if (event.key === 'Escape' && feedbackModal.classList.contains('open')) closeFeedbackModal();
+  if (event.key === 'Escape' && developerModal.classList.contains('open')) closeDeveloperModal();
 });
+
+scheduleIdleTask(trackRealVisitor, 3000);
 
 countrySearch.addEventListener('input', (event) => {
   appState.query = event.target.value;
-  renderCountries();
+  scheduleCountryRender();
 });
 channelSearch.addEventListener('input', (event) => {
   appState.channelQuery = event.target.value;
   appState.aiChannels = null;
-  appState.renderLimit = appState.globalMode ? 700 : 1000;
-  renderChannels();
-  requestPythonAI();
+  appState.renderLimit = INITIAL_CHANNEL_RENDER_LIMIT;
+  scheduleChannelRender();
 });
+countryList.addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-code]');
+  if (button) selectCountryByCode(button.dataset.code, { keepPicker: false, source: 'search' });
+});
+countryList.addEventListener('error', (event) => {
+  if (event.target.matches('.country-flag img')) event.target.hidden = true;
+}, true);
+channelGrid.addEventListener('click', (event) => {
+  const favoriteButton = event.target.closest('[data-favorite-index]');
+  if (favoriteButton) {
+    toggleFavorite(getRenderedChannel(favoriteButton.dataset.favoriteIndex));
+    return;
+  }
+  const playButton = event.target.closest('.play-channel');
+  if (playButton) {
+    playChannel(playButton.dataset.url, playButton.dataset.title, {
+      id: playButton.dataset.id,
+      type: playButton.dataset.type
+    });
+    return;
+  }
+  if (event.target.closest('[data-load-more-channels]')) {
+    appState.renderLimit += CHANNEL_RENDER_INCREMENT;
+    renderChannels();
+    return;
+  }
+  const readButton = event.target.closest('[data-read-newspaper]');
+  if (readButton) {
+    openNewspaperReader(readButton.dataset.url, readButton.dataset.title);
+  }
+});
+channelGrid.addEventListener('error', (event) => {
+  if (!event.target.matches('.channel-logo img')) return;
+  event.target.hidden = true;
+  event.target.closest('.channel-logo')?.classList.add('show-fallback');
+}, true);
 leftNav.addEventListener('click', (event) => {
   const link = event.target.closest('.nav-link');
   if (!link) return;
@@ -644,8 +1400,8 @@ leftNav.addEventListener('click', (event) => {
   if (link.dataset.category) {
     handleCategoryNavigation(link.dataset.category).catch(() => {
       document.getElementById('channelCount').textContent = '0';
-      document.getElementById('aiInsight').textContent = 'Could not load channels right now';
-      document.getElementById('channelGrid').innerHTML = '<p class="muted">Channels could not be loaded right now.</p>';
+      document.getElementById('aiInsight').textContent = t('couldNotLoadChannels');
+      document.getElementById('channelGrid').innerHTML = `<p class="muted">${t('channelsCouldNotLoad')}</p>`;
     });
   }
   if (link.dataset.action === 'focus') {
@@ -679,19 +1435,25 @@ leftNav.addEventListener('click', (event) => {
 });
 
 async function handleCategoryNavigation(categoryId) {
+  if (appState.mediaMode === 'newspapers') {
+    appState.newspaperCategory = 'all';
+    renderNewspapers();
+    leftNav.classList.remove('open');
+    return;
+  }
   appState.selectedCategory = categoryId;
   appState.aiChannels = null;
   appState.channelQuery = '';
-  appState.renderLimit = 700;
+  appState.renderLimit = INITIAL_CHANNEL_RENDER_LIMIT;
   channelSearch.value = '';
   leftNav.classList.remove('open');
 
   if (categoryId === 'favorites') {
     appState.globalMode = false;
     countryPanel.classList.add('channels-only');
-    document.getElementById('countryTitle').textContent = 'Favorites';
-    document.getElementById('heroCountry').textContent = 'Favorites';
-    document.getElementById('mediaTitle').textContent = appState.mediaMode === 'radio' ? 'Favorite Radio' : 'Favorite Channels';
+    document.getElementById('countryTitle').textContent = t('favorites');
+    document.getElementById('heroCountry').textContent = t('favorites');
+    document.getElementById('mediaTitle').textContent = appState.mediaMode === 'radio' ? t('favoriteRadio') : t('favoriteChannels');
     renderChannels();
     requestPythonAI();
     return;
@@ -699,9 +1461,9 @@ async function handleCategoryNavigation(categoryId) {
 
   if (appState.mediaMode === 'radio') {
     if (!appState.currentChannels.length && !appState.selectedCountry) {
-      document.getElementById('countryTitle').textContent = 'Select a Country';
-      document.getElementById('aiInsight').textContent = 'Choose a country first, then filter radio stations';
-      document.getElementById('channelGrid').innerHTML = '<p class="muted">Choose a country first to browse radio stations by category.</p>';
+      document.getElementById('countryTitle').textContent = t('selectCountry');
+      document.getElementById('aiInsight').textContent = t('chooseCountryRadioFirst');
+      document.getElementById('channelGrid').innerHTML = `<p class="muted">${t('chooseCountryRadioFirstBody')}</p>`;
       document.getElementById('channelCount').textContent = '0';
       return;
     }
@@ -720,48 +1482,55 @@ async function loadGlobalCategory(categoryId) {
   appState.currentChannels = [];
   appState.aiChannels = null;
   appState.aiInsight = '';
-  appState.renderLimit = categoryId === 'all' ? 700 : 1000;
+  appState.renderLimit = INITIAL_CHANNEL_RENDER_LIMIT;
   countryPanel.classList.add('channels-only');
   document.getElementById('countryTitle').textContent = label;
   document.getElementById('heroCountry').textContent = label;
   document.getElementById('channelCount').textContent = '...';
   document.getElementById('aiInsight').textContent = categoryId === 'all'
-    ? 'Loading channels from all countries'
-    : `Loading ${label} channels from all countries`;
+    ? t('loadingChannelsAll')
+    : t('loadingCategoryAll', { label });
   document.getElementById('channelGrid').innerHTML = skeletonCards();
-  setGlobeStatus(label, 'Loading channels from all countries');
+  setGlobeStatus(label, t('loadingChannelsAll'));
 
   try {
     appState.currentChannels = await loadGlobalCategoryChannels(categoryId);
     const filteredCount = smartFilterChannels(appState.currentChannels).length;
-    appState.aiInsight = categoryId === 'all'
-      ? `${filteredCount} channels from all countries`
-      : `${filteredCount} ${label} channels from all countries`;
-    setGlobeStatus(label, `${filteredCount} channels ready`);
+    appState.aiInsight = t('mediaAvailable', { count: filteredCount, label: categoryId === 'all' ? mediaTypeLabel('tv') : label });
+    setGlobeStatus(label, t('mediaAvailable', { count: filteredCount, label: mediaTypeLabel('tv') }));
     renderCountries();
     renderChannels();
   } catch (error) {
     appState.currentChannels = [];
     document.getElementById('channelCount').textContent = '0';
-    document.getElementById('aiInsight').textContent = 'Could not load global channels right now';
-    document.getElementById('channelGrid').innerHTML = '<p class="muted">Global channels could not be loaded right now.</p>';
+    document.getElementById('aiInsight').textContent = t('couldNotLoadGlobal');
+    document.getElementById('channelGrid').innerHTML = `<p class="muted">${t('globalCouldNotLoad')}</p>`;
   }
 }
 
 function categoryLabel(categoryId) {
-  return categories.find(([id]) => id === categoryId)?.[1] || 'Channels';
+  return tCategory(categoryId) || t('freeChannels');
 }
 
 setInterval(updateClock, 1000);
 updateClock();
 updateMediaLabels();
-initGlobe();
 loadCountries();
+requestAnimationFrame(() => initGlobe());
 initializeAds();
+applyLanguage();
+
+function scheduleIdleTask(task, timeout = 4000) {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(task, { timeout });
+    return;
+  }
+  setTimeout(task, Math.min(timeout, 3000));
+}
 
 async function initGlobe() {
   const mount = document.getElementById('globeStage');
-  mount.innerHTML = `<div class="globe-loading"><span>${brandLogo}</span><strong>Loading globe</strong></div>`;
+  mount.innerHTML = `<div class="globe-loading"><span>${brandLogo}</span><strong>${t('loadingGlobe')}</strong></div>`;
 
   try {
     const threeModule = await loadGlobeModules();
@@ -769,7 +1538,7 @@ async function initGlobe() {
     mount.innerHTML = '';
     createGlobe();
   } catch (error) {
-    mount.innerHTML = `<div class="globe-loading error-state"><span>${brandLogo}</span><strong>Globe could not load</strong></div>`;
+    mount.innerHTML = `<div class="globe-loading error-state"><span>${brandLogo}</span><strong>${t('globeError')}</strong></div>`;
   }
 }
 
@@ -826,14 +1595,14 @@ async function loadCountries() {
       return;
     }
     if (!appState.selectedCountry && !appState.globalMode) {
-      document.getElementById('countryTitle').textContent = 'Select a Country';
-      document.getElementById('heroCountry').textContent = 'Choose from the globe';
-      document.getElementById('aiInsight').textContent = 'Click a country on the globe to load channels';
-      document.getElementById('channelGrid').innerHTML = '<p class="muted">Channels will appear here after you choose a country from the globe.</p>';
+      document.getElementById('countryTitle').textContent = t('selectCountry');
+      document.getElementById('heroCountry').textContent = t('chooseFromGlobe');
+      document.getElementById('aiInsight').textContent = t('clickCountryChannels');
+      document.getElementById('channelGrid').innerHTML = `<p class="muted">${t('channelsWillAppear')}</p>`;
     }
   } catch (error) {
     document.getElementById('countryList').innerHTML =
-      '<p class="error">Could not load countries. Check the internet connection and reload.</p>';
+      `<p class="error">${t('channelsCouldNotLoad')}</p>`;
   }
 }
 
@@ -864,14 +1633,14 @@ async function selectCountry(country, options = {}) {
   appState.aiChannels = null;
   appState.aiInsight = '';
   appState.channelQuery = '';
-  appState.renderLimit = 700;
+  appState.renderLimit = INITIAL_CHANNEL_RENDER_LIMIT;
   channelSearch.value = '';
   document.getElementById('countryTitle').textContent = country.name;
   document.getElementById('heroCountry').textContent = country.name;
-  const mediaLabel = appState.mediaMode === 'radio' ? 'radio stations' : 'channels';
+  const mediaLabel = mediaTypeLabel();
   setGlobeStatus(country.name, `${country.flag || flag(country.code)} Loading ${mediaLabel}`);
   document.getElementById('channelCount').textContent = '...';
-  document.getElementById('aiInsight').textContent = options.fromGlobe ? 'Selected from the globe' : `Loading ${mediaLabel} for this country`;
+  document.getElementById('aiInsight').textContent = options.fromGlobe ? t('selectedFromGlobe') : t('loadingMediaForCountry', { label: mediaLabel });
   document.getElementById('channelGrid').innerHTML = skeletonCards();
   updateMediaLabels();
   renderCountries();
@@ -883,53 +1652,181 @@ async function selectCountry(country, options = {}) {
 
   try {
     appState.currentChannels = await loadCountryMedia(country.code);
-    setGlobeStatus(country.name, `${country.flag || flag(country.code)} ${appState.currentChannels.length} ${mediaLabel} available`);
+    setGlobeStatus(country.name, `${country.flag || flag(country.code)} ${t('mediaAvailable', { count: appState.currentChannels.length, label: mediaLabel })}`);
     renderChannels();
     requestPythonAI();
     if (appState.mediaMode === 'tv') mergeIptvApiChannels(country).catch(() => {});
   } catch (error) {
     appState.currentChannels = [];
     document.getElementById('channelCount').textContent = '0';
-    document.getElementById('aiInsight').textContent = `No ${mediaLabel} found for this country`;
-    setGlobeStatus(country.name, `${country.flag || flag(country.code)} No ${mediaLabel} found right now`);
+    document.getElementById('aiInsight').textContent = t('noMediaFound', { label: mediaLabel });
+    setGlobeStatus(country.name, `${country.flag || flag(country.code)} ${t('noMediaFound', { label: mediaLabel })}`);
     document.getElementById('channelGrid').innerHTML =
-      `<p class="muted">No playable free ${escapeHtml(mediaLabel)} were found for this country right now.</p>`;
+      `<p class="muted">${t('noMediaFoundDetail', { label: escapeHtml(mediaLabel) })}</p>`;
   }
 }
 
 function setMediaMode(mode) {
-  if (!['tv', 'radio'].includes(mode) || appState.mediaMode === mode) return;
+  if (!['tv', 'radio', 'newspapers'].includes(mode) || appState.mediaMode === mode) return;
   appState.mediaMode = mode;
   appState.globalMode = false;
   appState.aiChannels = null;
   appState.aiInsight = '';
   appState.channelQuery = '';
-  appState.renderLimit = 700;
+  appState.renderLimit = INITIAL_CHANNEL_RENDER_LIMIT;
   channelSearch.value = '';
   closePlayer();
+  if (mode !== 'newspapers') closeNewspaperReader();
+  countryPanel.classList.toggle('newspapers-only', mode === 'newspapers');
   updateMediaLabels();
   document.getElementById('tvMode').classList.toggle('active', mode === 'tv');
   document.getElementById('radioMode').classList.toggle('active', mode === 'radio');
-  showToast(mode === 'radio' ? 'Radio mode is active.' : 'TV mode is active.');
+  document.getElementById('newspapersMode').classList.toggle('active', mode === 'newspapers');
+  showToast(mode === 'radio' ? t('radioActive') : (mode === 'newspapers' ? nt('title') : t('tvActive')));
+  if (mode === 'newspapers') {
+    openNewspapersMode();
+    return;
+  }
   if (appState.selectedCountry) {
     selectCountry(appState.selectedCountry, { keepPicker: false, silent: true });
   } else {
     document.getElementById('aiInsight').textContent =
-      mode === 'radio' ? 'Click a country on the globe to load radio stations' : 'Click a country on the globe to load channels';
+      mode === 'radio' ? t('clickCountryRadio') : t('clickCountryChannels');
     document.getElementById('channelGrid').innerHTML =
-      `<p class="muted">${mode === 'radio' ? 'Radio stations' : 'Channels'} will appear here after you choose a country from the globe.</p>`;
+      `<p class="muted">${mode === 'radio' ? t('radioWillAppear') : t('channelsWillAppear')}</p>`;
   }
 }
 
 function updateMediaLabels() {
   const isRadio = appState.mediaMode === 'radio';
-  document.getElementById('mediaTitle').textContent = isRadio ? 'Free Radio' : 'Free Channels';
-  document.getElementById('playerTitle').textContent = isRadio ? 'Select a radio station' : 'Select a channel';
-  channelSearch.placeholder = isRadio ? 'Search stations, language, or tag' : 'Search channels or category';
+  const isNewspapers = appState.mediaMode === 'newspapers';
+  document.getElementById('mediaTitle').textContent = isNewspapers ? nt('title') : (isRadio ? t('freeRadio') : t('freeChannels'));
+  document.getElementById('playerTitle').textContent = isRadio ? t('selectRadio') : t('selectChannel');
+  channelSearch.placeholder = isNewspapers ? nt('search') : (isRadio ? t('searchRadio') : t('searchChannels'));
 }
 
 async function loadCountryMedia(code) {
   return appState.mediaMode === 'radio' ? loadRadioStations(code) : loadCountryChannels(code);
+}
+
+async function openNewspapersMode() {
+  countryPanel.classList.remove('channels-only');
+  countryPanel.classList.add('newspapers-only');
+  document.getElementById('countryTitle').textContent = nt('select');
+  document.getElementById('heroCountry').textContent = nt('title');
+  document.getElementById('aiInsight').textContent = nt('loading');
+  document.getElementById('channelCount').textContent = '...';
+  channelGrid.innerHTML = skeletonCards();
+  setGlobeStatus(nt('title'), nt('hint'));
+  await loadNewspapers();
+  renderCountries();
+  if (appState.selectedNewspaperCountry) {
+    selectNewspaperCountry(appState.selectedNewspaperCountry.key, { silent: true });
+  } else {
+    document.getElementById('channelCount').textContent = String(appState.newspapers.length);
+    document.getElementById('aiInsight').textContent = nt('hint');
+    channelGrid.innerHTML = `<p class="muted">${nt('hint')}</p>`;
+  }
+}
+
+async function loadNewspapers() {
+  if (appState.newspapers.length) return appState.newspapers;
+  const response = await fetch(NEWSPAPERS_DATA, { signal: AbortSignal.timeout(12_000) });
+  if (!response.ok) throw new Error('Newspapers data failed');
+  const data = await response.json();
+  appState.newspapers = Array.isArray(data.items) ? data.items.map(sanitizeNewspaper).filter((item) => item.url) : [];
+  const byCountry = new Map();
+  appState.newspapers.forEach((item) => {
+    const key = item.countryCode || item.country;
+    if (!byCountry.has(key)) {
+      byCountry.set(key, {
+        key,
+        code: item.countryCode,
+        name: item.country,
+        nameEn: item.countryEn,
+        continent: item.continent,
+        count: 0
+      });
+    }
+    byCountry.get(key).count += 1;
+  });
+  appState.newspaperCountries = [...byCountry.values()].sort((a, b) => a.name.localeCompare(b.name));
+  return appState.newspapers;
+}
+
+function sanitizeNewspaper(item) {
+  return {
+    id: String(item?.id || '').slice(0, 40),
+    continent: String(item?.continent || '').slice(0, 80),
+    country: String(item?.country || '').slice(0, 120),
+    countryEn: String(item?.countryEn || '').slice(0, 120),
+    countryCode: normalizeCountryCode(item?.countryCode || ''),
+    category: String(item?.category || 'general').slice(0, 40),
+    categoryAr: String(item?.categoryAr || '').slice(0, 80),
+    categoryEn: String(item?.categoryEn || '').slice(0, 80),
+    name: String(item?.name || '').slice(0, 180),
+    url: sanitizeUrl(item?.url),
+    domain: String(item?.domain || '').slice(0, 120),
+    sourceType: String(item?.sourceType || '').slice(0, 100),
+    official: Boolean(item?.official),
+    language: String(item?.language || '').slice(0, 80),
+    description: String(item?.description || '').slice(0, 240)
+  };
+}
+
+function getNewspaperCountryDisplayName(countryOrItem) {
+  if (!countryOrItem) return nt('title');
+  const code = normalizeCountryCode(countryOrItem.code || countryOrItem.countryCode || '');
+  const knownCountry = code ? findCountryByCode(code) : null;
+  if (currentLanguage === 'ar') {
+    return countryOrItem.name || countryOrItem.country || countryOrItem.nameEn || knownCountry?.name || code || nt('title');
+  }
+  return countryOrItem.nameEn || knownCountry?.name || countryOrItem.countryEn || countryOrItem.name || countryOrItem.country || code || nt('title');
+}
+
+function newspaperCategoryName(category) {
+  return newspaperLocale[currentLanguage]?.categoryNames?.[category]
+    || newspaperLocale.en.categoryNames[category]
+    || nt(category);
+}
+
+function newspaperDescription(item) {
+  const country = getNewspaperCountryDisplayName({
+    code: item.countryCode,
+    countryCode: item.countryCode,
+    name: item.country,
+    nameEn: item.countryEn
+  });
+  const template = newspaperLocale[currentLanguage]?.description || newspaperLocale.en.description;
+  return template
+    .replace('{name}', item.name || item.domain || nt('source'))
+    .replace('{category}', newspaperCategoryName(item.category))
+    .replace('{country}', country);
+}
+
+function newspaperMeta(item) {
+  const sourceLabel = item.official ? nt('official') : (newspaperLocale[currentLanguage]?.sourceMeta || nt('source'));
+  return [item.domain, sourceLabel, item.language].filter(Boolean).join(' - ');
+}
+
+function selectNewspaperCountry(key, options = {}) {
+  const country = appState.newspaperCountries.find((item) => item.key === key || item.code === key || item.name === key);
+  if (!country) return;
+  const countryName = getNewspaperCountryDisplayName(country);
+  appState.selectedNewspaperCountry = country;
+  appState.currentNewspapers = appState.newspapers.filter((item) => (item.countryCode || item.country) === country.key);
+  appState.channelQuery = '';
+  appState.newspaperCategory = 'all';
+  channelSearch.value = '';
+  countryPanel.classList.add('channels-only', 'newspapers-only');
+  document.getElementById('countryTitle').textContent = countryName;
+  document.getElementById('heroCountry').textContent = countryName;
+  document.getElementById('aiInsight').textContent = nt('loaded', { count: appState.currentNewspapers.length });
+  document.getElementById('channelCount').textContent = String(appState.currentNewspapers.length);
+  if (country.code) focusCountry(country.code);
+  if (!options.silent) leftNav.classList.remove('open');
+  renderCountries();
+  renderNewspapers();
 }
 
 async function loadRadioStations(code) {
@@ -947,16 +1844,21 @@ async function loadRadioStations(code) {
 }
 
 async function selectCountryByCode(rawCode, options = {}) {
+  if (appState.mediaMode === 'newspapers') {
+    await loadNewspapers();
+    selectNewspaperCountry(rawCode, options);
+    return;
+  }
   const code = normalizeCountryCode(rawCode);
   debugCountrySelection(rawCode, code, options.source || 'unknown');
   if (!isAvailableCountryCode(code)) {
-    showToast('This country is not available yet.');
+    showToast(t('countryUnavailable'));
     return;
   }
 
   const country = findCountryByCode(code);
   if (!country) {
-    showToast('Country data is still loading.');
+    showToast(t('countryLoading'));
     return;
   }
 
@@ -1012,8 +1914,8 @@ async function mergeIptvApiChannels(country) {
   appState.currentChannels = merged;
   channelCache.set(code, merged);
   safeSessionSet(`watchnations:${CHANNEL_CACHE_VERSION}:m3u:${code}`, merged);
-  setGlobeStatus(country.name, `${country.flag || flag(code)} ${merged.length} channels available`);
-  appState.aiInsight = `${merged.length} streams available for this country`;
+  setGlobeStatus(country.name, `${country.flag || flag(code)} ${t('mediaAvailable', { count: merged.length, label: mediaTypeLabel('tv') })}`);
+  appState.aiInsight = t('mediaAvailable', { count: merged.length, label: mediaTypeLabel('tv') });
   appState.aiChannels = null;
   renderChannels();
   requestPythonAI();
@@ -1056,7 +1958,7 @@ async function loadApiChannelsForCountry(code) {
 
 async function loadAllIptvChannels() {
   if (appState.mediaMode === 'radio') {
-    showToast('Global TV is available in TV mode.');
+    showToast(t('globalTvOnly'));
     return;
   }
   appState.globalMode = true;
@@ -1065,27 +1967,27 @@ async function loadAllIptvChannels() {
   appState.aiChannels = null;
   appState.aiInsight = '';
   appState.channelQuery = '';
-  appState.renderLimit = 700;
+  appState.renderLimit = INITIAL_CHANNEL_RENDER_LIMIT;
   channelSearch.value = '';
   countryPanel.classList.add('channels-only');
-  document.getElementById('countryTitle').textContent = 'All Channels';
-  document.getElementById('heroCountry').textContent = 'All Channels';
+  document.getElementById('countryTitle').textContent = t('allChannels');
+  document.getElementById('heroCountry').textContent = t('allChannels');
   document.getElementById('channelCount').textContent = '...';
-  document.getElementById('aiInsight').textContent = 'Loading playable global streams';
+  document.getElementById('aiInsight').textContent = t('loadingChannelsAll');
   document.getElementById('channelGrid').innerHTML = skeletonCards();
-  setGlobeStatus('All Channels', 'Loading the global stream index');
+  setGlobeStatus(t('allChannels'), t('loadingChannelsAll'));
 
   try {
     appState.currentChannels = await loadGlobalIptvChannels();
-    appState.aiInsight = `Loaded ${appState.currentChannels.length} playable streams`;
-    setGlobeStatus('All Channels', `${appState.currentChannels.length} playable streams loaded`);
+    appState.aiInsight = t('loadedStreams', { count: appState.currentChannels.length });
+    setGlobeStatus(t('allChannels'), t('streamsLoaded', { count: appState.currentChannels.length }));
     renderCountries();
     renderChannels();
   } catch (error) {
     appState.currentChannels = [];
     document.getElementById('channelCount').textContent = '0';
-    document.getElementById('aiInsight').textContent = 'Could not load the global channel index';
-    document.getElementById('channelGrid').innerHTML = '<p class="muted">The global channel index could not be loaded right now.</p>';
+    document.getElementById('aiInsight').textContent = t('globalIndexError');
+    document.getElementById('channelGrid').innerHTML = `<p class="muted">${t('globalIndexErrorBody')}</p>`;
   }
 }
 
@@ -1249,11 +2151,27 @@ function dedupeChannels(channels) {
   });
 }
 
+function scheduleCountryRender() {
+  clearTimeout(scheduleCountryRender.timer);
+  scheduleCountryRender.timer = setTimeout(renderCountries, 80);
+}
+
+function scheduleChannelRender() {
+  clearTimeout(scheduleChannelRender.timer);
+  scheduleChannelRender.timer = setTimeout(() => {
+    renderChannels();
+    requestPythonAI();
+  }, 120);
+}
+
 function renderCountries() {
-  const list = document.getElementById('countryList');
+  if (appState.mediaMode === 'newspapers') {
+    renderNewspaperCountries();
+    return;
+  }
   const countries = smartRankCountries(appState.countries, appState.query);
 
-  list.innerHTML = countries
+  countryList.innerHTML = countries
     .map(
       (country) => `
         <button data-code="${escapeHtml(country.code)}" class="${country.code === appState.selectedCountry?.code ? 'selected' : ''}">
@@ -1267,17 +2185,31 @@ function renderCountries() {
       `
     )
     .join('');
+}
 
-  list.querySelectorAll('button').forEach((button) => {
-    button.addEventListener('click', () => {
-      selectCountryByCode(button.dataset.code, { keepPicker: false, source: 'search' });
-    });
-  });
-  list.querySelectorAll('.country-flag img').forEach((image) => {
-    image.addEventListener('error', () => {
-      image.hidden = true;
-    }, { once: true });
-  });
+function renderNewspaperCountries() {
+  const query = normalize(appState.query);
+  const countries = appState.newspaperCountries
+    .filter((country) => {
+      const displayName = getNewspaperCountryDisplayName(country);
+      return !query || normalize(`${displayName} ${country.name} ${country.nameEn} ${country.code || ''}`).includes(query);
+    })
+    .sort((a, b) => getNewspaperCountryDisplayName(a).localeCompare(getNewspaperCountryDisplayName(b)));
+  countryList.innerHTML = countries
+    .map((country) => {
+      const displayName = getNewspaperCountryDisplayName(country);
+      return `
+        <button data-code="${escapeHtml(country.key)}" class="${country.key === appState.selectedNewspaperCountry?.key ? 'selected' : ''}">
+          <span class="country-flag" aria-hidden="true">
+            ${country.code ? `<img src="${escapeHtml(flagImageUrl(country.code, 80))}" srcset="${escapeHtml(flagSrcSet(country.code))}" alt="" loading="lazy" />` : ''}
+            <span class="country-flag-fallback">${escapeHtml(country.code || 'NP')}</span>
+          </span>
+          <span>${escapeHtml(displayName)}</span>
+          <small>${country.count}</small>
+        </button>
+      `;
+    })
+    .join('');
 }
 
 function smartRankCountries(countries, query) {
@@ -1303,7 +2235,10 @@ function smartRankCountries(countries, query) {
 }
 
 function renderChannels() {
-  const grid = document.getElementById('channelGrid');
+  if (appState.mediaMode === 'newspapers') {
+    renderNewspapers();
+    return;
+  }
   syncFavoriteMetadata(appState.currentChannels);
   const channels = smartFilterChannels(appState.aiChannels || appState.currentChannels);
 
@@ -1311,17 +2246,17 @@ function renderChannels() {
   document.getElementById('aiInsight').textContent = appState.aiInsight || getInsight(channels);
 
   if (!channels.length) {
-    const label = appState.mediaMode === 'radio' ? 'radio stations' : 'channels';
-    grid.innerHTML = appState.selectedCategory === 'favorites'
-      ? '<p class="muted">No favorites yet. Press the star button on any channel to save it here.</p>'
-      : `<p class="muted">No ${label} match the current filter.</p>`;
+    const label = mediaTypeLabel();
+    channelGrid.innerHTML = appState.selectedCategory === 'favorites'
+      ? `<p class="muted">${t('noFavorites')}</p>`
+      : `<p class="muted">${t('noMatch', { label })}</p>`;
     return;
   }
 
   const renderedChannels = channels.slice(0, appState.renderLimit);
   appState.renderedChannels = renderedChannels;
 
-  grid.innerHTML = renderedChannels
+  channelGrid.innerHTML = renderedChannels
     .map(
       (channel, index) => `
         <article class="channel-card">
@@ -1331,40 +2266,92 @@ function renderChannels() {
             <small>${escapeHtml(channelMeta(channel))}</small>
           </div>
           <div class="channel-actions">
-            <button class="mini-button favorite ${appState.favorites.has(channel.url) ? 'active' : ''}" data-favorite-index="${index}" title="${appState.favorites.has(channel.url) ? 'Remove favorite' : 'Add favorite'}">${icons.star}</button>
-            <button class="mini-button play-channel" data-url="${escapeHtml(sanitizeUrl(channel.url))}" data-title="${escapeHtml(channel.name)}" data-id="${escapeHtml(channel.id)}" data-type="${escapeHtml(channel.type || appState.mediaMode)}" title="Play">${icons.play}</button>
+            <button class="mini-button favorite ${appState.favorites.has(channel.url) ? 'active' : ''}" data-favorite-index="${index}" title="${appState.favorites.has(channel.url) ? t('removeFavorite') : t('addFavorite')}">${icons.star}</button>
+            <button class="mini-button play-channel" data-url="${escapeHtml(sanitizeUrl(channel.url))}" data-title="${escapeHtml(channel.name)}" data-id="${escapeHtml(channel.id)}" data-type="${escapeHtml(channel.type || appState.mediaMode)}" title="${t('play')}">${icons.play}</button>
           </div>
         </article>
       `
     )
     .join('') + renderMoreChannelsButton(channels.length);
+}
 
-  grid.querySelectorAll('[data-favorite-index]').forEach((button) => {
-    button.addEventListener('click', () => toggleFavorite(getRenderedChannel(button.dataset.favoriteIndex)));
+function renderNewspapers() {
+  const query = normalize(appState.channelQuery);
+  const categories = ['all', 'politics', 'economy', 'society', 'sports', 'technology'];
+  let items = appState.currentNewspapers;
+  if (appState.newspaperCategory !== 'all') items = items.filter((item) => item.category === appState.newspaperCategory);
+  if (query) {
+    items = items.filter((item) => normalize(`${item.name} ${item.domain} ${item.categoryAr} ${item.categoryEn} ${item.description} ${item.sourceType}`).includes(query));
+  }
+  document.getElementById('channelCount').textContent = String(items.length);
+  document.getElementById('aiInsight').textContent = nt('loaded', { count: items.length });
+  if (!appState.selectedNewspaperCountry) {
+    channelGrid.innerHTML = `<p class="muted">${nt('hint')}</p>`;
+    return;
+  }
+  const categoryBar = `
+    <div class="newspaper-category-bar" aria-label="${nt('categories')}">
+      ${categories.map((category) => `<button class="${category === appState.newspaperCategory ? 'active' : ''}" data-newspaper-category="${category}">${nt(category)}</button>`).join('')}
+    </div>
+  `;
+  if (!items.length) {
+    channelGrid.innerHTML = `${categoryBar}<p class="muted">${nt('empty')}</p>`;
+    return;
+  }
+  channelGrid.innerHTML = categoryBar + items
+    .slice(0, appState.renderLimit)
+    .map((item) => `
+      <article class="newspaper-card">
+        <div class="newspaper-icon">${icons.news}</div>
+        <div class="newspaper-body">
+          <div class="newspaper-tags">
+            <span>${escapeHtml(nt(item.category))}</span>
+            ${item.official ? `<span>${escapeHtml(nt('official'))}</span>` : ''}
+          </div>
+          <strong><a class="newspaper-title-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.name)}</a></strong>
+          <small><a class="newspaper-domain-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(newspaperMeta(item))}</a></small>
+          <p>${escapeHtml(newspaperDescription(item))}</p>
+          <div class="newspaper-actions">
+            <button class="mini-text-button" data-read-newspaper data-url="${escapeHtml(item.url)}" data-title="${escapeHtml(item.name)}">${nt('read')}</button>
+            <a class="mini-text-button" href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${nt('open')}</a>
+          </div>
+        </div>
+      </article>
+    `)
+    .join('') + renderMoreChannelsButton(items.length);
+  channelGrid.querySelectorAll('[data-newspaper-category]').forEach((button) => {
+    button.addEventListener('click', () => {
+      appState.newspaperCategory = button.dataset.newspaperCategory;
+      appState.renderLimit = INITIAL_CHANNEL_RENDER_LIMIT;
+      renderNewspapers();
+    });
   });
-  grid.querySelectorAll('.play-channel').forEach((button) => {
-    button.addEventListener('click', () => playChannel(button.dataset.url, button.dataset.title, {
-      id: button.dataset.id,
-      type: button.dataset.type
-    }));
-  });
-  grid.querySelectorAll('.channel-logo img').forEach((image) => {
-    image.addEventListener('error', () => {
-      image.hidden = true;
-      image.closest('.channel-logo')?.classList.add('show-fallback');
-    }, { once: true });
-  });
-  grid.querySelector('[data-load-more-channels]')?.addEventListener('click', () => {
-    appState.renderLimit += appState.globalMode ? 700 : 1000;
-    renderChannels();
-  });
+}
+
+function openNewspaperReader(url, title) {
+  const safe = sanitizeUrl(url);
+  if (!safe) return;
+  const reader = document.getElementById('newspaperReader');
+  document.getElementById('newspaperReaderTitle').textContent = title || nt('readerTitle');
+  document.getElementById('newspaperReaderOpen').href = safe;
+  document.getElementById('newspaperFrame').src = safe;
+  reader.classList.add('open');
+  reader.setAttribute('aria-hidden', 'false');
+}
+
+function closeNewspaperReader() {
+  const reader = document.getElementById('newspaperReader');
+  if (!reader) return;
+  reader.classList.remove('open');
+  reader.setAttribute('aria-hidden', 'true');
+  document.getElementById('newspaperFrame').src = 'about:blank';
 }
 
 function channelMeta(channel) {
   const country = findCountryByCode(channel.country);
   const parts = channel.type === 'radio'
-    ? [country?.name || channel.country || '', channel.group || 'Radio', channel.quality || '']
-    : [country?.name || channel.country || '', channel.group || 'General', channel.quality || ''];
+    ? [country?.name || channel.country || '', channel.group || t('radio'), channel.quality || '']
+    : [country?.name || channel.country || '', channel.group || tCategory('general'), channel.quality || ''];
   return parts.filter(Boolean).join(' - ');
 }
 
@@ -1388,7 +2375,7 @@ function renderMoreChannelsButton(total) {
   const remaining = total - appState.renderLimit;
   return `
     <button class="load-more-channels" data-load-more-channels>
-      Show ${Math.min(remaining, appState.globalMode ? 700 : 1000)} more of ${remaining}
+      ${t('showMore', { count: Math.min(remaining, CHANNEL_RENDER_INCREMENT), remaining })}
     </button>
   `;
 }
@@ -1440,9 +2427,7 @@ function requestPythonAI() {
       const result = await response.json();
       if (!result.channels?.length) return;
       appState.aiChannels = result.channels.map(sanitizeChannel).filter((channel) => channel.url);
-      appState.aiInsight = appState.mediaMode === 'radio'
-        ? `${appState.aiChannels.length} matching stations`
-        : `${appState.aiChannels.length} matching channels`;
+      appState.aiInsight = t('mediaAvailable', { count: appState.aiChannels.length, label: mediaTypeLabel() });
       renderChannels();
     } catch (error) {
       appState.aiInsight = '';
@@ -1516,14 +2501,12 @@ function countryFromGeoFeature(feature, code) {
 }
 
 function getInsight(channels) {
-  if (appState.selectedCategory === 'favorites') return `${channels.length} favorite ${appState.mediaMode === 'radio' ? 'stations' : 'channels'} saved`;
-  if (appState.globalMode) return appState.aiInsight || `Global channel index: ${channels.length} streams`;
-  if (!appState.currentChannels.length) return appState.mediaMode === 'radio' ? 'Choose a country to load radio stations' : 'Choose a country to load channels';
-  if (appState.channelQuery) return `AI filter ranked ${channels.length} matching channels`;
+  if (appState.selectedCategory === 'favorites') return t('mediaAvailable', { count: channels.length, label: appState.mediaMode === 'radio' ? t('favoriteRadio') : t('favoriteChannels') });
+  if (appState.globalMode) return appState.aiInsight || t('loadedStreams', { count: channels.length });
+  if (!appState.currentChannels.length) return appState.mediaMode === 'radio' ? t('clickCountryRadio') : t('clickCountryChannels');
+  if (appState.channelQuery) return t('mediaAvailable', { count: channels.length, label: mediaTypeLabel() });
   const groups = new Set(channels.map((channel) => channel.group).filter(Boolean));
-  return appState.mediaMode === 'radio'
-    ? `${channels.length} stations across ${groups.size || 1} groups`
-    : `${channels.length} streams across ${groups.size || 1} groups`;
+  return `${channels.length} ${mediaTypeLabel()} / ${groups.size || 1}`;
 }
 
 function getRenderedChannel(index) {
@@ -1556,11 +2539,11 @@ function toggleFavorite(channel) {
   if (appState.favorites.has(favoriteChannel.url)) {
     appState.favorites.delete(favoriteChannel.url);
     appState.favoriteChannels.delete(favoriteChannel.url);
-    showToast('Removed from Favorites.');
+    showToast(t('removedFavorite'));
   } else {
     appState.favorites.add(favoriteChannel.url);
     appState.favoriteChannels.set(favoriteChannel.url, favoriteChannel);
-    showToast('Added to Favorites.');
+    showToast(t('addedFavorite'));
   }
 
   saveFavorites();
@@ -1572,7 +2555,7 @@ function saveFavorites() {
     localStorage.setItem('watchnations:favorites', JSON.stringify([...appState.favorites]));
     localStorage.setItem('watchnations:favorite-channels', JSON.stringify([...appState.favoriteChannels.values()]));
   } catch (error) {
-    showToast('Favorites storage is full.');
+    showToast(t('favoritesFull'));
   }
 }
 
@@ -1585,13 +2568,13 @@ function selectRandomCountry() {
 function playRandomChannel() {
   const channels = smartFilterChannels(appState.currentChannels);
   if (!channels.length) {
-    showToast(appState.mediaMode === 'radio' ? 'No radio stations available for the current filter.' : 'No channels available for the current filter.');
+    showToast(appState.mediaMode === 'radio' ? t('noRadioAvailable') : t('noChannelsAvailable'));
     return;
   }
   const channel = channels[Math.floor(Math.random() * channels.length)];
   const url = sanitizeUrl(channel.url);
   if (!url) {
-    showToast('This channel link is not safe to open.');
+    showToast(t('unsafeChannel'));
     return;
   }
   playChannel(url, channel.name);
@@ -1600,14 +2583,14 @@ function playRandomChannel() {
 async function playChannel(rawUrl, rawTitle = 'Live TV', options = {}) {
   const url = sanitizeUrl(rawUrl);
   if (!url) {
-    showToast('This stream URL is not safe to play.');
+    showToast(t('unsafeStream'));
     return;
   }
 
   const playerPanel = document.getElementById('playerPanel');
   const playerTitle = document.getElementById('playerTitle');
   playerPanel.classList.add('open');
-  playerTitle.textContent = rawTitle || (options.type === 'radio' ? 'Live Radio' : 'Live TV');
+  playerTitle.textContent = rawTitle || (options.type === 'radio' ? t('radio') : t('tv'));
 
   if (options.type === 'radio' || appState.mediaMode === 'radio') {
     playRadio(url, rawTitle, options.id);
@@ -1615,7 +2598,7 @@ async function playChannel(rawUrl, rawTitle = 'Live TV', options = {}) {
   }
 
   playerPanel.classList.remove('radio-player');
-  showToast('Loading live stream...');
+  showToast(t('loadingLiveStream'));
 
   try {
     document.getElementById('radioPlayer').pause();
@@ -1626,10 +2609,10 @@ async function playChannel(rawUrl, rawTitle = 'Live TV', options = {}) {
     appState.player.src({ src: url, type: streamType(url) });
     const playResult = appState.player.play();
     if (playResult?.catch) {
-      playResult.catch(() => showToast('Press play to start this stream.'));
+      playResult.catch(() => showToast(t('pressPlayStream')));
     }
   } catch (error) {
-    showToast('Video player could not load. Opening stream in a new tab.');
+    showToast(t('playerError'));
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 }
@@ -1655,10 +2638,10 @@ async function playRadio(url, title = 'Live Radio', stationId = '') {
   }
 
   audio.src = url;
-  showToast(`Loading ${title || 'radio station'}...`);
+  showToast(t('loadingRadio', { title: title || mediaTypeLabel('radio') }));
   const playResult = audio.play();
   if (playResult?.catch) {
-    playResult.catch(() => showToast('Press play to start this radio station.'));
+    playResult.catch(() => showToast(t('pressPlayRadio')));
   }
 }
 
@@ -1666,7 +2649,7 @@ function closePlayer() {
   const playerPanel = document.getElementById('playerPanel');
   playerPanel.classList.remove('open');
   playerPanel.classList.remove('radio-player');
-  document.getElementById('playerTitle').textContent = appState.mediaMode === 'radio' ? 'Select a radio station' : 'Select a channel';
+  document.getElementById('playerTitle').textContent = appState.mediaMode === 'radio' ? t('selectRadio') : t('selectChannel');
   if (appState.player) appState.player.pause();
   document.getElementById('radioPlayer').pause();
 }
@@ -1722,7 +2705,7 @@ function makePlayerPanelDraggable() {
 async function requestPlayerPictureInPicture() {
   const video = document.querySelector('#livePlayer video') || document.getElementById('livePlayer');
   if (!video || document.getElementById('playerPanel').classList.contains('radio-player')) {
-    showToast('Picture in picture is available for TV streams.');
+    showToast(t('pipTvOnly'));
     return;
   }
 
@@ -1732,12 +2715,12 @@ async function requestPlayerPictureInPicture() {
       return;
     }
     if (!document.pictureInPictureEnabled || typeof video.requestPictureInPicture !== 'function') {
-      showToast('Your browser does not support picture in picture.');
+      showToast(t('pipUnsupported'));
       return;
     }
     await video.requestPictureInPicture();
   } catch (error) {
-    showToast('Start the video first, then try PiP.');
+    showToast(t('startVideoFirst'));
   }
 }
 
@@ -1846,11 +2829,7 @@ function initializeAds() {
     });
   };
 
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(run, { timeout: 2500 });
-  } else {
-    setTimeout(run, 1200);
-  }
+  scheduleIdleTask(run, 8000);
 }
 
 function showToast(message) {
@@ -1867,6 +2846,7 @@ function showToast(message) {
 }
 
 function openAboutModal() {
+  renderInfoPage('about');
   aboutModal.classList.add('open');
   aboutModal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
@@ -1880,6 +2860,7 @@ function closeAboutModal() {
 }
 
 function openPrivacyModal() {
+  renderInfoPage('privacy');
   privacyModal.classList.add('open');
   privacyModal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
@@ -1893,6 +2874,7 @@ function closePrivacyModal() {
 }
 
 function openFaqModal() {
+  renderInfoPage('faq');
   faqModal.classList.add('open');
   faqModal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
@@ -1906,6 +2888,7 @@ function closeFaqModal() {
 }
 
 function openFeedbackModal() {
+  renderInfoPage('feedback');
   feedbackModal.classList.add('open');
   feedbackModal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
@@ -1918,15 +2901,146 @@ function closeFeedbackModal() {
   document.body.classList.remove('modal-open');
 }
 
+function openDeveloperModal() {
+  applyDeveloperLanguage();
+  developerModal.classList.add('open');
+  developerModal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+  setDeveloperMessage('');
+  if (document.getElementById('developerPanel').hidden) {
+    document.getElementById('developerPassword').focus();
+  } else {
+    refreshDeveloperStats();
+    document.getElementById('developerCurrentCode').focus();
+  }
+}
+
+function closeDeveloperModal() {
+  developerModal.classList.remove('open');
+  developerModal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+  developerLoginForm.hidden = false;
+  document.getElementById('developerPanel').hidden = true;
+  document.getElementById('developerPassword').value = '';
+  document.getElementById('developerCurrentCode').value = '';
+  document.getElementById('developerNewCode').value = '';
+  setDeveloperMessage('');
+}
+
+async function loginDeveloper() {
+  const passwordInput = document.getElementById('developerPassword');
+  const password = passwordInput.value;
+  setDeveloperMessage(t('checkingCode'));
+  try {
+    const result = await postJson('/api/developer/login', { password });
+    if (!result.ok) throw new Error(result.error || t('wrongCode'));
+    developerLoginForm.hidden = true;
+    document.getElementById('developerPanel').hidden = false;
+    document.getElementById('developerCurrentCode').value = password;
+    passwordInput.value = '';
+    renderDeveloperStats(result.stats);
+    setDeveloperMessage(t('developerOpen'));
+  } catch (error) {
+    setDeveloperMessage(error.message || t('wrongCode'));
+    passwordInput.select();
+  }
+}
+
+async function changeDeveloperCode() {
+  const currentInput = document.getElementById('developerCurrentCode');
+  const newInput = document.getElementById('developerNewCode');
+  const currentPassword = currentInput.value;
+  const newPassword = newInput.value.trim();
+  setDeveloperMessage(t('savingCode'));
+  try {
+    const result = await postJson('/api/developer/password', { currentPassword, newPassword });
+    if (!result.ok) throw new Error(result.error || t('requestFailed'));
+    currentInput.value = newPassword;
+    newInput.value = '';
+    renderDeveloperStats(result.stats);
+    setDeveloperMessage(t('codeChanged'));
+  } catch (error) {
+    setDeveloperMessage(error.message || t('requestFailed'));
+  }
+}
+
+async function refreshDeveloperStats() {
+  const currentPassword = document.getElementById('developerCurrentCode').value;
+  if (!currentPassword) return;
+  try {
+    const result = await postJson('/api/developer/login', { password: currentPassword });
+    if (result.ok) renderDeveloperStats(result.stats);
+  } catch (error) {
+    setDeveloperMessage(t('refreshStatsError'));
+  }
+}
+
+function applyDeveloperLanguage() {
+  document.querySelector('.developer-kicker').textContent = t('developerArea');
+  document.getElementById('developerTitle').textContent = t('developerTitle');
+  document.querySelector('.developer-login label').firstChild.textContent = t('accessCode');
+  document.getElementById('developerPassword').placeholder = t('enterCode');
+  document.querySelector('#developerLoginForm .developer-primary').textContent = t('openDeveloper');
+  const statLabels = document.querySelectorAll('.developer-stats small');
+  if (statLabels[0]) statLabels[0].textContent = t('realVisitors');
+  if (statLabels[1]) statLabels[1].textContent = t('totalVisits');
+  const codeLabels = document.querySelectorAll('.developer-code-form label');
+  if (codeLabels[0]) codeLabels[0].firstChild.textContent = t('currentCode');
+  if (codeLabels[1]) codeLabels[1].firstChild.textContent = t('newCode');
+  document.querySelector('#developerCodeForm .developer-primary').textContent = t('changeCode');
+}
+
+function renderDeveloperStats(stats = {}) {
+  document.getElementById('developerVisitors').textContent = Number(stats.visitors || 0).toLocaleString();
+  document.getElementById('developerTotalVisits').textContent = Number(stats.totalVisits || 0).toLocaleString();
+  document.getElementById('developerLastVisit').textContent = t('lastVisit', { date: formatDeveloperDate(stats.lastVisitAt) });
+}
+
+function setDeveloperMessage(message) {
+  document.getElementById('developerMessage').textContent = message;
+}
+
+function formatDeveloperDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString();
+}
+
+async function trackRealVisitor() {
+  try {
+    const key = 'watchnations:visitor-id';
+    let visitorId = localStorage.getItem(key);
+    if (!visitorId) {
+      visitorId = window.crypto?.randomUUID ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      localStorage.setItem(key, visitorId);
+    }
+    await postJson('/api/visitors/track', { visitorId });
+  } catch (error) {
+    // Visitor counting should never block the TV experience.
+  }
+}
+
+async function postJson(url, payload) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {})
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || t('requestFailed'));
+  return result;
+}
+
 function navActionMessage(action) {
   const messages = {
-    about: 'WatchNations brings free TV and radio by country.',
+    about: t('about'),
     embed: 'Embed tools will be available in the next build.',
-    faq: 'FAQ section is ready to be connected.',
-    privacy: 'WatchNations does not require accounts or passwords.',
-    feedback: 'Feedback form will be connected soon.'
+    faq: t('faq'),
+    privacy: t('privacy'),
+    feedback: t('feedback')
   };
-  return messages[action] || 'Ready';
+  return messages[action] || t('ready');
 }
 
 function skeletonCards() {
