@@ -632,6 +632,35 @@ svg {
   display: none;
 }
 
+.ad-slot {
+  flex: 0 0 auto;
+  min-height: 96px;
+  margin: 0 24px 14px;
+  padding: 8px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+.ad-slot > span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ad-slot .adsbygoogle {
+  min-height: 74px;
+}
+
+.ad-slot.ad-pending {
+  display: none;
+}
+
 .country-panel.channels-only .change-country {
   display: inline-flex;
   align-items: center;
@@ -1116,6 +1145,10 @@ svg {
     max-height: 300px;
   }
 
+  .ad-slot {
+    margin: 0 18px 14px;
+  }
+
   .channel-grid {
     max-height: min(720px, 72vh);
   }
@@ -1263,6 +1296,11 @@ svg {
 
   .country-list button {
     font-size: 18px;
+  }
+
+  .ad-slot {
+    min-height: 86px;
+    margin: 0 16px 12px;
   }
 
   .channels {

@@ -348,6 +348,15 @@ document.getElementById('root').innerHTML = `
         <label class="search-box">${icons.search}<input id="countrySearch" placeholder="Search country" /></label>
         <div class="country-list" id="countryList"><p class="muted">Loading countries...</p></div>
       </section>
+      <section class="ad-slot ad-slot-panel" aria-label="Advertisement">
+        <span>Advertisement</span>
+        <ins class="adsbygoogle"
+          style="display:block"
+          data-ad-client="ca-pub-3496611324359492"
+          data-ad-slot="5276058157"
+          data-ad-format="auto"
+          data-full-width-responsive="true"></ins>
+      </section>
       <div class="channels">
         <section class="player-panel" id="playerPanel">
           <div class="player-head">
@@ -748,6 +757,7 @@ updateClock();
 updateMediaLabels();
 initGlobe();
 loadCountries();
+initializeAds();
 
 async function initGlobe() {
   const mount = document.getElementById('globeStage');
@@ -1822,6 +1832,25 @@ function loadScriptOnce(id, src) {
     script.onerror = reject;
     document.head.appendChild(script);
   });
+}
+
+function initializeAds() {
+  const run = () => {
+    document.querySelectorAll('.adsbygoogle:not([data-watchnations-loaded])').forEach((slot) => {
+      slot.dataset.watchnationsLoaded = 'true';
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (error) {
+        slot.closest('.ad-slot')?.classList.add('ad-pending');
+      }
+    });
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(run, { timeout: 2500 });
+  } else {
+    setTimeout(run, 1200);
+  }
 }
 
 function showToast(message) {

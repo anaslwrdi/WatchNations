@@ -878,7 +878,7 @@ function setSecurityHeaders(response) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net https://pagead2.googlesyndication.com",
+      "script-src 'self' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
       "style-src 'self' 'unsafe-inline' https://vjs.zencdn.net",
       "img-src 'self' https: data:",
       "connect-src 'self' https: http: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net",
