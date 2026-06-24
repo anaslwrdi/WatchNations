@@ -805,6 +805,11 @@ async function loadCountries() {
     rebuildCountryLookup();
     appState.availableCountryCodes = new Set(appState.countries.map((country) => country.code));
     renderCountries();
+    const initialCountryCode = normalizeCountryCode(new URLSearchParams(window.location.search).get('country'));
+    if (initialCountryCode && isAvailableCountryCode(initialCountryCode)) {
+      selectCountryByCode(initialCountryCode, { keepPicker: false, source: 'url', silent: true });
+      return;
+    }
     if (!appState.selectedCountry && !appState.globalMode) {
       document.getElementById('countryTitle').textContent = 'Select a Country';
       document.getElementById('heroCountry').textContent = 'Choose from the globe';

@@ -23,6 +23,8 @@ const RADIO_USER_AGENT = 'WatchNations/1.0';
 const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
+const SEO_LASTMOD = '2026-06-24';
+const SEO_ROUTES = new Set(['/about', '/faq', '/privacy-policy', '/feedback', '/countries']);
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -96,6 +98,16 @@ const server = http.createServer((request, response) => {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.writeHead(404);
       response.end('Not found');
+      return;
+    }
+
+    if (url.pathname === '/sitemap.xml') {
+      sendTextResponse(request, response, 200, buildSitemap(), 'application/xml; charset=utf-8', 'public, max-age=3600');
+      return;
+    }
+
+    if (isSeoRoute(url.pathname)) {
+      sendTextResponse(request, response, 200, renderSeoRoute(url.pathname), 'text/html; charset=utf-8', 'public, max-age=3600');
       return;
     }
 
@@ -179,6 +191,30 @@ function sendStaticFile(request, response, filePath) {
   });
 }
 
+function sendTextResponse(request, response, status, text, contentType, cacheControl) {
+  const data = Buffer.from(text, 'utf8');
+  const etag = `"${data.length.toString(16)}-${Buffer.from(text).subarray(0, 32).toString('hex')}"`;
+  if (request.headers['if-none-match'] === etag) {
+    response.writeHead(304, {
+      'ETag': etag,
+      'Cache-Control': cacheControl
+    });
+    response.end();
+    return;
+  }
+
+  const headers = {
+    'Content-Type': contentType,
+    'Cache-Control': cacheControl,
+    'ETag': etag,
+    'Vary': 'Accept-Encoding'
+  };
+  const encoded = compressBuffer(request, data, etag);
+  if (encoded.encoding) headers['Content-Encoding'] = encoded.encoding;
+  response.writeHead(status, headers);
+  response.end(request.method === 'HEAD' ? undefined : encoded.body);
+}
+
 function compressStaticBody(request, filePath, data, etag) {
   if (data.length < 1024) return { body: data, encoding: '' };
   const ext = path.extname(filePath);
@@ -186,11 +222,17 @@ function compressStaticBody(request, filePath, data, etag) {
     return { body: data, encoding: '' };
   }
 
+  return compressBuffer(request, data, etag);
+}
+
+function compressBuffer(request, data, etag) {
+  if (data.length < 1024) return { body: data, encoding: '' };
+
   const accepted = String(request.headers['accept-encoding'] || '');
   const encoding = accepted.includes('br') ? 'br' : (accepted.includes('gzip') ? 'gzip' : '');
   if (!encoding) return { body: data, encoding: '' };
 
-  const cacheKey = `${filePath}:${etag}:${encoding}`;
+  const cacheKey = `${etag}:${encoding}`;
   const cached = compressedFileCache.get(cacheKey);
   if (cached) return { body: cached, encoding };
 
@@ -200,6 +242,201 @@ function compressStaticBody(request, filePath, data, etag) {
   compressedFileCache.set(cacheKey, body);
   if (compressedFileCache.size > 80) compressedFileCache.delete(compressedFileCache.keys().next().value);
   return { body, encoding };
+}
+
+function isSeoRoute(pathname) {
+  if (SEO_ROUTES.has(pathname)) return true;
+  return /^\/countries\/[a-z]{2}$/i.test(pathname);
+}
+
+function renderSeoRoute(pathname) {
+  if (pathname === '/about') {
+    return seoPage({
+      path: pathname,
+      title: 'About WatchNations - Free Global TV Discovery',
+      description: 'Learn about WatchNations, a free platform for discovering live TV channels and radio stations by country, category, and interactive globe.',
+      heading: 'About WatchNations',
+      body: [
+        'WatchNations helps people discover free live TV channels and radio stations from around the world. The platform is built around country browsing, category discovery, favorites, and an interactive 3D globe.',
+        'The service does not require sign-up or subscription. Users can choose a country, browse available channels, and open live streams from public external sources.',
+        'WatchNations is neutral and global. It does not host, upload, own, or control video streams. Copyright and DMCA questions can be sent to lindaraymane@gmail.com.'
+      ]
+    });
+  }
+
+  if (pathname === '/faq') {
+    return seoPage({
+      path: pathname,
+      title: 'WatchNations FAQ - Free Live TV Questions',
+      description: 'Answers to common WatchNations questions about free live TV, radio stations, favorites, safety, privacy, and external streams.',
+      heading: 'Frequently Asked Questions',
+      body: [
+        'Is WatchNations free? Yes. WatchNations is free to use and does not require an account or subscription.',
+        'How do I find channels? Choose a country from the globe, use country search, or browse categories such as news, sports, music, movies, kids, weather, and education.',
+        'Why are some channels unavailable? External live streams can change, go offline, or be restricted by the original provider. WatchNations organizes publicly available links but does not control external streams.'
+      ]
+    });
+  }
+
+  if (pathname === '/privacy-policy') {
+    return seoPage({
+      path: pathname,
+      title: 'Privacy Policy - WatchNations',
+      description: 'Read the WatchNations privacy policy covering external links, local favorites, analytics, advertising, cookies, and user privacy.',
+      heading: 'Privacy Policy',
+      body: [
+        'WatchNations does not require users to create an account or provide personal information to browse free live TV and radio sources.',
+        'Favorite channels may be stored locally in the browser. This means saved favorites stay on the user device and are not sent to WatchNations servers.',
+        'The platform may link to external streams and websites. Those third-party sources have their own privacy policies and content rules.'
+      ]
+    });
+  }
+
+  if (pathname === '/feedback') {
+    return seoPage({
+      path: pathname,
+      title: 'Feedback and Copyright Contact - WatchNations',
+      description: 'Contact WatchNations to suggest channels, report broken links, send feedback, or submit copyright and DMCA removal requests.',
+      heading: 'Feedback and Copyright Contact',
+      body: [
+        'Users can contact WatchNations to suggest a channel, report a broken link, share a feature idea, or ask about copyright concerns.',
+        'WatchNations respects copyright laws and does not host or upload video content. The platform organizes external public sources in good faith.',
+        'For feedback, DMCA, or copyright requests, email lindaraymane@gmail.com.'
+      ]
+    });
+  }
+
+  if (pathname === '/countries') return renderCountriesSeoPage();
+
+  const countryMatch = pathname.match(/^\/countries\/([a-z]{2})$/i);
+  if (countryMatch) return renderCountrySeoPage(countryMatch[1]);
+
+  return seoPage({
+    path: '/',
+    title: 'WatchNations - Free Live TV Channels by Country',
+    description: 'Explore free live TV channels and radio stations from around the world by country and category.',
+    heading: 'WatchNations',
+    body: ['Explore global free live TV and radio by country.']
+  });
+}
+
+function renderCountriesSeoPage() {
+  const countries = loadSeoCountries();
+  const countryLinks = countries
+    .map((country) => `<li><a href="/countries/${country.code.toLowerCase()}">${escapeHtml(country.name)} live TV channels</a></li>`)
+    .join('');
+  return seoPage({
+    path: '/countries',
+    title: 'Countries - Watch Free Live TV by Country | WatchNations',
+    description: 'Browse countries on WatchNations and discover free live TV channels and radio stations from around the world.',
+    heading: 'Browse Live TV by Country',
+    bodyHtml: `
+      <p>Choose a country to discover free live TV channels and radio stations. Each country page links back to the interactive WatchNations app.</p>
+      <ul class="country-grid">${countryLinks}</ul>
+    `
+  });
+}
+
+function renderCountrySeoPage(rawCode) {
+  const code = normalizeCountryCode(rawCode);
+  const country = loadSeoCountries().find((item) => item.code === code);
+  if (!country) {
+    return seoPage({
+      path: '/countries',
+      title: 'Country Not Found - WatchNations',
+      description: 'Browse free live TV channels by country on WatchNations.',
+      heading: 'Country Not Found',
+      body: ['This country is not available yet. Browse the full country list to find available live TV channels.']
+    });
+  }
+
+  return seoPage({
+    path: `/countries/${code.toLowerCase()}`,
+    title: `${country.name} Live TV Channels - WatchNations`,
+    description: `Watch free live TV channels and radio stations from ${country.name} on WatchNations. Browse by country, category, and interactive globe.`,
+    heading: `${country.name} Live TV Channels`,
+    body: [
+      `WatchNations helps users discover free live TV channels and radio stations from ${country.name}.`,
+      `Open the WatchNations app to browse ${country.name} channels, save favorites, and explore related categories such as news, sports, music, movies, and weather.`,
+      'Streams are provided by external public sources. WatchNations does not host or control video content.'
+    ],
+    cta: { href: `/?country=${code}`, label: `Open ${country.name} in WatchNations` }
+  });
+}
+
+function seoPage({ path: pathname, title, description, heading, body = [], bodyHtml = '', cta }) {
+  const canonical = `https://watchnations.com${pathname === '/' ? '/' : pathname}`;
+  const paragraphs = body.map((text) => `<p>${escapeHtml(text)}</p>`).join('');
+  const action = cta ? `<p><a class="button" href="${escapeHtml(cta.href)}">${escapeHtml(cta.label)}</a></p>` : '<p><a class="button" href="/">Open WatchNations App</a></p>';
+  return `<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="google-site-verification" content="BOGebDfiNtUgDvVuRNuqb7sQb92qcvZ3Y-CkEgRrhKE">
+  <link rel="canonical" href="${escapeHtml(canonical)}">
+  <link rel="icon" href="/assets/watchnations-tv-logo.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="WatchNations">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:url" content="${escapeHtml(canonical)}">
+  <meta property="og:image" content="https://watchnations.com/assets/watchnations-tv-logo.png">
+  <style>
+    :root{color:#f7f9fb;background:#050609;font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif}
+    body{margin:0;background:#050609;color:#f7f9fb;line-height:1.7}
+    header,main,footer{max-width:980px;margin:auto;padding:28px}
+    header{display:flex;gap:18px;align-items:center;border-bottom:1px solid rgba(255,255,255,.14)}
+    img{width:72px;height:72px;object-fit:contain}
+    a{color:#ff4a42} .brand{font-weight:900;font-size:28px}.brand span{color:#ff0800}
+    h1{font-size:clamp(34px,6vw,62px);line-height:1.05;margin:34px 0 18px}
+    p{max-width:760px;color:#d7dbe3}.button{display:inline-block;margin-top:10px;padding:12px 18px;border:1px solid #ff0800;border-radius:8px;color:#fff;background:#ff0800;text-decoration:none;font-weight:900}
+    nav{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}.country-grid{columns:3 220px;padding-left:20px}.country-grid li{break-inside:avoid;margin:0 0 8px}
+    footer{border-top:1px solid rgba(255,255,255,.14);color:#b8bfca}
+  </style>
+</head>
+<body>
+  <header><a href="/"><img src="/assets/watchnations-tv-logo.png" alt="WatchNations logo"></a><div><div class="brand"><span>Watch</span>Nations</div><nav><a href="/">App</a><a href="/countries">Countries</a><a href="/about">About</a><a href="/faq">FAQ</a><a href="/privacy-policy">Privacy</a><a href="/feedback">Feedback</a></nav></div></header>
+  <main>
+    <h1>${escapeHtml(heading)}</h1>
+    ${bodyHtml || paragraphs}
+    ${action}
+  </main>
+  <footer>WatchNations does not host video streams. It organizes publicly available external links in good faith.</footer>
+</body>
+</html>`;
+}
+
+function buildSitemap() {
+  const staticUrls = ['/', '/countries', '/about', '/faq', '/privacy-policy', '/feedback'];
+  const countryUrls = loadSeoCountries().map((country) => `/countries/${country.code.toLowerCase()}`);
+  const urls = [...staticUrls, ...countryUrls]
+    .map((pathname) => `  <url>
+    <loc>https://watchnations.com${pathname === '/' ? '/' : pathname}</loc>
+    <lastmod>${SEO_LASTMOD}</lastmod>
+    <changefreq>${pathname.startsWith('/countries/') ? 'weekly' : 'daily'}</changefreq>
+    <priority>${pathname === '/' ? '1.0' : pathname.startsWith('/countries/') ? '0.7' : '0.8'}</priority>
+  </url>`)
+    .join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+}
+
+function loadSeoCountries() {
+  try {
+    const file = fs.readFileSync(path.join(rootPath, 'data', 'iptv-countries.min.json'), 'utf8');
+    const countries = JSON.parse(file);
+    return Array.isArray(countries)
+      ? countries
+        .map((country) => ({ code: normalizeCountryCode(country.code), name: safeText(country.name, 120) }))
+        .filter((country) => country.code && country.name)
+      : [];
+  } catch (error) {
+    return [];
+  }
 }
 
 function allowApiRequest(request, response) {
@@ -508,6 +745,15 @@ function normalizeCountryCode(code = '') {
 
 function safeText(value, maxLength) {
   return String(value || '').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, maxLength);
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function safeUrl(value) {
