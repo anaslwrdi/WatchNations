@@ -471,7 +471,7 @@ function allowApiRequest(request, response) {
 
 function isAllowedStaticPath(filePath) {
   if (filePath === path.join(rootPath, 'index.html')) return true;
-  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt'].some((file) => filePath === path.join(rootPath, file))) return true;
+  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml'].some((file) => filePath === path.join(rootPath, file))) return true;
   const relative = path.relative(rootPath, filePath);
   const [topLevel] = relative.split(path.sep);
   return ['src', 'data', 'assets'].includes(topLevel);
@@ -481,7 +481,7 @@ function staticCacheControl(filePath) {
   const relative = path.relative(rootPath, filePath);
   const [topLevel] = relative.split(path.sep);
   if (topLevel === 'data' || topLevel === 'assets') return 'public, max-age=604800';
-  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt'].includes(relative)) return 'public, max-age=3600';
+  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml'].includes(relative)) return 'public, max-age=3600';
   if (topLevel === 'src') return 'no-cache';
   return 'no-store';
 }
