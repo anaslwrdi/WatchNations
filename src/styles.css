@@ -15,6 +15,7 @@
 
 html {
   background: #020309;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -47,6 +48,7 @@ svg {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 500px;
   grid-template-rows: 73px minmax(0, 1fr);
+  height: 100vh;
   min-height: 100vh;
   direction: ltr;
   background:
@@ -472,12 +474,14 @@ svg {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
   background: #202124;
   border-left: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .panel-head {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
@@ -647,6 +651,7 @@ svg {
   display: flex;
   flex: 1;
   flex-direction: column;
+  overflow: hidden;
   padding: 18px 24px 24px;
 }
 
@@ -730,6 +735,7 @@ svg {
 
 .channels-head {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
@@ -778,14 +784,39 @@ svg {
 }
 
 .channel-search {
+  flex: 0 0 auto;
   margin: 0 0 12px;
 }
 
 .channel-grid {
   display: grid;
+  flex: 1 1 auto;
   gap: 10px;
-  overflow: auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-right: 4px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.34) transparent;
+}
+
+.channel-grid::-webkit-scrollbar {
+  width: 10px;
+}
+
+.channel-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+}
+
+.channel-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 10px;
+}
+
+.channel-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--accent-rgb), 0.72);
 }
 
 .channel-card {
@@ -1062,6 +1093,7 @@ svg {
   }
 
   .shell {
+    height: auto;
     grid-template-columns: 1fr;
     grid-template-rows: 73px minmax(500px, 62vh) auto;
   }
@@ -1070,6 +1102,7 @@ svg {
     grid-column: 1;
     grid-row: 3;
     min-height: 720px;
+    overflow: visible;
     border-left: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.12);
   }
@@ -1081,6 +1114,10 @@ svg {
 
   .country-list {
     max-height: 300px;
+  }
+
+  .channel-grid {
+    max-height: min(720px, 72vh);
   }
 }
 
