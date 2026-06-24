@@ -25,6 +25,37 @@ const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
 const SEO_LASTMOD = '2026-06-24';
 const SEO_ROUTES = new Set(['/about', '/faq', '/privacy-policy', '/feedback', '/countries']);
+const SEO_CATEGORIES = [
+  ['all', 'All Channels', 'free live TV channels from all countries'],
+  ['top-news', 'Top News', 'top live news channels from around the world'],
+  ['news', 'News', 'free live news TV channels by country'],
+  ['music', 'Music', 'free live music TV channels worldwide'],
+  ['sports', 'Sports', 'free live sports TV channels worldwide'],
+  ['auto', 'Auto', 'automotive and car TV channels'],
+  ['animation', 'Animation', 'animation and cartoon TV channels'],
+  ['business', 'Business', 'business, finance, and markets TV channels'],
+  ['classic', 'Classic', 'classic and retro TV channels'],
+  ['comedy', 'Comedy', 'comedy and entertainment TV channels'],
+  ['cooking', 'Cooking', 'cooking, food, and recipe TV channels'],
+  ['culture', 'Culture', 'culture and arts TV channels'],
+  ['documentary', 'Documentary', 'documentary TV channels worldwide'],
+  ['education', 'Education', 'educational TV channels'],
+  ['entertainment', 'Entertainment', 'entertainment TV channels worldwide'],
+  ['family', 'Family', 'family TV channels'],
+  ['general', 'General', 'general live TV channels'],
+  ['kids', 'Kids', 'kids and children TV channels'],
+  ['legislative', 'Legislative', 'parliament and legislative TV channels'],
+  ['lifestyle', 'Lifestyle', 'lifestyle TV channels'],
+  ['movies', 'Movies', 'movie and cinema TV channels'],
+  ['outdoor', 'Outdoor', 'outdoor and adventure TV channels'],
+  ['relax', 'Relax', 'relaxing and ambient TV channels'],
+  ['religious', 'Religious', 'religious and spiritual TV channels'],
+  ['series', 'Series', 'series and drama TV channels'],
+  ['science', 'Science', 'science and technology TV channels'],
+  ['shop', 'Shop', 'shopping TV channels'],
+  ['travel', 'Travel', 'travel and tourism TV channels'],
+  ['weather', 'Weather', 'weather forecast TV channels']
+];
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -246,7 +277,8 @@ function compressBuffer(request, data, etag) {
 
 function isSeoRoute(pathname) {
   if (SEO_ROUTES.has(pathname)) return true;
-  return /^\/countries\/[a-z]{2}$/i.test(pathname);
+  if (pathname === '/categories') return true;
+  return /^\/countries\/[a-z]{2}$/i.test(pathname) || /^\/categories\/[a-z0-9-]+$/i.test(pathname);
 }
 
 function renderSeoRoute(pathname) {
@@ -307,9 +339,12 @@ function renderSeoRoute(pathname) {
   }
 
   if (pathname === '/countries') return renderCountriesSeoPage();
+  if (pathname === '/categories') return renderCategoriesSeoPage();
 
   const countryMatch = pathname.match(/^\/countries\/([a-z]{2})$/i);
   if (countryMatch) return renderCountrySeoPage(countryMatch[1]);
+  const categoryMatch = pathname.match(/^\/categories\/([a-z0-9-]+)$/i);
+  if (categoryMatch) return renderCategorySeoPage(categoryMatch[1]);
 
   return seoPage({
     path: '/',
@@ -334,6 +369,49 @@ function renderCountriesSeoPage() {
       <p>Choose a country to discover free live TV channels and radio stations. Each country page links back to the interactive WatchNations app.</p>
       <ul class="country-grid">${countryLinks}</ul>
     `
+  });
+}
+
+function renderCategoriesSeoPage() {
+  const categoryLinks = SEO_CATEGORIES
+    .map(([id, label, summary]) => `<li><a href="/categories/${id}">${escapeHtml(label)} live TV</a><span>${escapeHtml(summary)}</span></li>`)
+    .join('');
+  return seoPage({
+    path: '/categories',
+    title: 'Live TV Categories - WatchNations',
+    description: 'Browse free live TV channels by category on WatchNations, including news, sports, music, movies, kids, weather, documentaries, and more.',
+    heading: 'Browse Live TV by Category',
+    bodyHtml: `
+      <p>WatchNations organizes global live TV channels into categories so users can discover channels by topic as well as by country.</p>
+      <ul class="category-grid">${categoryLinks}</ul>
+    `
+  });
+}
+
+function renderCategorySeoPage(rawCategory) {
+  const category = SEO_CATEGORIES.find(([id]) => id === String(rawCategory || '').toLowerCase());
+  if (!category) {
+    return seoPage({
+      path: '/categories',
+      title: 'Category Not Found - WatchNations',
+      description: 'Browse free live TV channels by category on WatchNations.',
+      heading: 'Category Not Found',
+      body: ['This category is not available yet. Browse the full category list to find free live TV channels.']
+    });
+  }
+
+  const [id, label, summary] = category;
+  return seoPage({
+    path: `/categories/${id}`,
+    title: `${label} Live TV Channels - WatchNations`,
+    description: `Discover ${summary} on WatchNations. Browse free live TV channels by category, country, and interactive globe.`,
+    heading: `${label} Live TV Channels`,
+    body: [
+      `WatchNations helps users discover ${summary}.`,
+      `Open the WatchNations app to browse ${label.toLowerCase()} channels from all countries, search streams, and save favorites locally in your browser.`,
+      'Streams are provided by external public sources. WatchNations does not host or control video content.'
+    ],
+    cta: { href: `/?category=${id}`, label: `Open ${label} Channels` }
   });
 }
 
@@ -400,7 +478,7 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   </style>
 </head>
 <body>
-  <header><a href="/"><img src="/assets/watchnations-tv-logo.png" alt="WatchNations logo"></a><div><div class="brand"><span>Watch</span>Nations</div><nav><a href="/">App</a><a href="/countries">Countries</a><a href="/about">About</a><a href="/faq">FAQ</a><a href="/privacy-policy">Privacy</a><a href="/feedback">Feedback</a></nav></div></header>
+  <header><a href="/"><img src="/assets/watchnations-tv-logo.png" alt="WatchNations logo"></a><div><div class="brand"><span>Watch</span>Nations</div><nav><a href="/">App</a><a href="/countries">Countries</a><a href="/categories">Categories</a><a href="/about">About</a><a href="/faq">FAQ</a><a href="/privacy-policy">Privacy</a><a href="/feedback">Feedback</a></nav></div></header>
   <main>
     <h1>${escapeHtml(heading)}</h1>
     ${bodyHtml || paragraphs}
@@ -412,14 +490,15 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
 }
 
 function buildSitemap() {
-  const staticUrls = ['/', '/countries', '/about', '/faq', '/privacy-policy', '/feedback'];
+  const staticUrls = ['/', '/countries', '/categories', '/about', '/faq', '/privacy-policy', '/feedback'];
   const countryUrls = loadSeoCountries().map((country) => `/countries/${country.code.toLowerCase()}`);
-  const urls = [...staticUrls, ...countryUrls]
+  const categoryUrls = SEO_CATEGORIES.map(([id]) => `/categories/${id}`);
+  const urls = [...staticUrls, ...categoryUrls, ...countryUrls]
     .map((pathname) => `  <url>
     <loc>https://watchnations.com${pathname === '/' ? '/' : pathname}</loc>
     <lastmod>${SEO_LASTMOD}</lastmod>
-    <changefreq>${pathname.startsWith('/countries/') ? 'weekly' : 'daily'}</changefreq>
-    <priority>${pathname === '/' ? '1.0' : pathname.startsWith('/countries/') ? '0.7' : '0.8'}</priority>
+    <changefreq>${pathname.startsWith('/countries/') || pathname.startsWith('/categories/') ? 'weekly' : 'daily'}</changefreq>
+    <priority>${pathname === '/' ? '1.0' : pathname.startsWith('/countries/') || pathname.startsWith('/categories/') ? '0.7' : '0.8'}</priority>
   </url>`)
     .join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
@@ -799,11 +878,12 @@ function setSecurityHeaders(response) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net",
+      "script-src 'self' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net https://pagead2.googlesyndication.com",
       "style-src 'self' 'unsafe-inline' https://vjs.zencdn.net",
       "img-src 'self' https: data:",
-      "connect-src 'self' https: http:",
+      "connect-src 'self' https: http: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net",
       "media-src https: http: blob:",
+      "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
       "font-src 'self' data:",
       "worker-src blob:",
       "object-src 'none'",

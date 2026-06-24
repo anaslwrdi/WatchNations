@@ -810,6 +810,11 @@ async function loadCountries() {
       selectCountryByCode(initialCountryCode, { keepPicker: false, source: 'url', silent: true });
       return;
     }
+    const initialCategory = normalize(new URLSearchParams(window.location.search).get('category')).replace(/\s+/g, '-');
+    if (initialCategory && categoryIds.has(initialCategory)) {
+      handleCategoryNavigation(initialCategory).catch(() => {});
+      return;
+    }
     if (!appState.selectedCountry && !appState.globalMode) {
       document.getElementById('countryTitle').textContent = 'Select a Country';
       document.getElementById('heroCountry').textContent = 'Choose from the globe';
