@@ -12,7 +12,7 @@ const palette = ['#1eb6d9', '#e7c51e', '#3daf58', '#d84d77', '#f2643f', '#9b58b4
 const channelCache = new Map();
 let iptvApiIndexPromise;
 const LOAD_EXTERNAL_LOGOS = false;
-const CHANNEL_CACHE_VERSION = 'flags-categories-v1';
+const CHANNEL_CACHE_VERSION = 'playable-alternates-v2';
 const INITIAL_CHANNEL_RENDER_LIMIT = window.matchMedia('(max-width: 760px)').matches ? 60 : 140;
 const CHANNEL_RENDER_INCREMENT = window.matchMedia('(max-width: 760px)').matches ? 90 : 220;
 const countryCodeAliases = {
@@ -294,6 +294,7 @@ const translations = {
     unsafeStream: 'This stream URL is not safe to play.',
     loadingLiveStream: 'Loading live stream...',
     pressPlayStream: 'Press play to start this stream.',
+    tryingAlternateStream: 'Trying another stream for this channel...',
     playerError: 'Video player could not load. Opening stream in a new tab.',
     loadingRadio: 'Loading {title}...',
     pressPlayRadio: 'Press play to start this radio station.',
@@ -376,7 +377,7 @@ const translations = {
     zoom: 'Zoom {percent}%', addedFavorite: 'Añadido a Favoritos.', removedFavorite: 'Eliminado de Favoritos.',
     favoritesFull: 'El almacenamiento de favoritos está lleno.', unsafeChannel: 'Este enlace de canal no es seguro.',
     unsafeStream: 'Esta URL de stream no es segura.', loadingLiveStream: 'Cargando transmisión en vivo...',
-    pressPlayStream: 'Pulsa reproducir para iniciar esta transmisión.', playerError: 'No se pudo cargar el reproductor. Abriendo en una nueva pestaña.',
+    pressPlayStream: 'Pulsa reproducir para iniciar esta transmisión.', tryingAlternateStream: 'Probando otra transmisión para este canal...', playerError: 'No se pudo cargar el reproductor. Abriendo en una nueva pestaña.',
     loadingRadio: 'Cargando {title}...', pressPlayRadio: 'Pulsa reproducir para iniciar esta emisora.',
     pipTvOnly: 'Imagen en imagen está disponible para streams de TV.', pipUnsupported: 'Tu navegador no soporta imagen en imagen.',
     startVideoFirst: 'Inicia el video primero y luego prueba PiP.', globalTvOnly: 'La TV global está disponible en modo TV.',
@@ -443,7 +444,7 @@ const translations = {
     zoom: 'Zoom {percent}%', addedFavorite: 'Ajouté aux favoris.', removedFavorite: 'Retiré des favoris.',
     favoritesFull: 'Le stockage des favoris est plein.', unsafeChannel: 'Ce lien de chaîne n’est pas sûr.',
     unsafeStream: 'Cette URL de stream n’est pas sûre.', loadingLiveStream: 'Chargement du direct...',
-    pressPlayStream: 'Appuyez sur lecture pour démarrer ce stream.', playerError: 'Le lecteur vidéo n’a pas pu charger. Ouverture dans un nouvel onglet.',
+    pressPlayStream: 'Appuyez sur lecture pour démarrer ce stream.', tryingAlternateStream: 'Essai d’un autre flux pour cette chaîne...', playerError: 'Le lecteur vidéo n’a pas pu charger. Ouverture dans un nouvel onglet.',
     loadingRadio: 'Chargement de {title}...', pressPlayRadio: 'Appuyez sur lecture pour démarrer cette radio.',
     pipTvOnly: 'L’image dans l’image est disponible pour les streams TV.', pipUnsupported: 'Votre navigateur ne prend pas en charge l’image dans l’image.',
     startVideoFirst: 'Lancez d’abord la vidéo, puis essayez PiP.', globalTvOnly: 'La TV mondiale est disponible en mode TV.',
@@ -510,7 +511,7 @@ const translations = {
     zoom: 'تكبير {percent}%', addedFavorite: 'تمت الإضافة إلى المفضلة.', removedFavorite: 'تمت الإزالة من المفضلة.',
     favoritesFull: 'مساحة المفضلة ممتلئة.', unsafeChannel: 'رابط هذه القناة غير آمن.',
     unsafeStream: 'رابط البث غير آمن.', loadingLiveStream: 'جاري تحميل البث المباشر...',
-    pressPlayStream: 'اضغط تشغيل لبدء هذا البث.', playerError: 'تعذر تحميل المشغل. سيتم فتح البث في تبويب جديد.',
+    pressPlayStream: 'اضغط تشغيل لبدء هذا البث.', tryingAlternateStream: 'نجرب بثًا آخر لهذه القناة...', playerError: 'تعذر تحميل المشغل. سيتم فتح البث في تبويب جديد.',
     loadingRadio: 'جاري تحميل {title}...', pressPlayRadio: 'اضغط تشغيل لبدء هذه المحطة.',
     pipTvOnly: 'صورة داخل صورة متاحة لبث التلفاز.', pipUnsupported: 'متصفحك لا يدعم صورة داخل صورة.',
     startVideoFirst: 'شغّل الفيديو أولاً ثم جرّب PiP.', globalTvOnly: 'القنوات العالمية متاحة في وضع TV.',
@@ -577,7 +578,7 @@ const translations = {
     zoom: 'Zoom {percent}%', addedFavorite: 'Aggiunto ai preferiti.', removedFavorite: 'Rimosso dai preferiti.',
     favoritesFull: 'Archivio preferiti pieno.', unsafeChannel: 'Questo link canale non è sicuro.',
     unsafeStream: 'Questo URL stream non è sicuro.', loadingLiveStream: 'Caricamento live stream...',
-    pressPlayStream: 'Premi play per avviare questo stream.', playerError: 'Il player video non si è caricato. Apertura in una nuova scheda.',
+    pressPlayStream: 'Premi play per avviare questo stream.', tryingAlternateStream: 'Provo un altro stream per questo canale...', playerError: 'Il player video non si è caricato. Apertura in una nuova scheda.',
     loadingRadio: 'Caricamento {title}...', pressPlayRadio: 'Premi play per avviare questa radio.',
     pipTvOnly: 'Picture in picture disponibile per stream TV.', pipUnsupported: 'Il browser non supporta picture in picture.',
     startVideoFirst: 'Avvia prima il video, poi prova PiP.', globalTvOnly: 'La TV globale è disponibile in modalità TV.',
@@ -911,6 +912,7 @@ const appState = {
   aiChannels: null,
   aiInsight: '',
   videoReadyPromise: null,
+  failedStreams: new Set(),
   favorites: new Set(safeParseJSON(localStorage.getItem('watchnations:favorites'), [])),
   favoriteChannels: new Map(safeParseJSON(localStorage.getItem('watchnations:favorite-channels'), []).map((channel) => [channel.url, channel])),
   geojson: null,
@@ -1372,9 +1374,12 @@ channelGrid.addEventListener('click', (event) => {
   }
   const playButton = event.target.closest('.play-channel');
   if (playButton) {
-    playChannel(playButton.dataset.url, playButton.dataset.title, {
-      id: playButton.dataset.id,
-      type: playButton.dataset.type
+    const channel = getRenderedChannel(playButton.dataset.channelIndex)
+      || { url: playButton.dataset.url, name: playButton.dataset.title, id: playButton.dataset.id, type: playButton.dataset.type };
+    playChannel(channel.url, channel.name, {
+      channel,
+      id: channel.id,
+      type: channel.type || playButton.dataset.type
     });
     return;
   }
@@ -2034,7 +2039,7 @@ async function loadGlobalCategoryChannels(categoryId) {
     const response = await fetch(`/api/tv/category?category=${encodeURIComponent(categoryId)}&limit=3000`);
     if (!response.ok) throw new Error(`Category ${categoryId} failed`);
     const data = await response.json();
-    const channels = Array.isArray(data.channels) ? data.channels.map(sanitizeChannel).filter((channel) => channel.url) : [];
+    const channels = Array.isArray(data.channels) ? dedupeChannels(data.channels) : [];
     if (channels.length) {
       safeSessionSet(cacheKey, channels);
       return channels;
@@ -2142,13 +2147,26 @@ function channelMatchesCategory(channel, categoryId) {
 }
 
 function dedupeChannels(channels) {
-  const seen = new Set();
-  return channels.filter((channel) => {
-    const key = `${channel.name}|${channel.url}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  const byChannel = new Map();
+  channels
+    .map(sanitizeChannel)
+    .filter((channel) => channel.url && isLikelyPlayableTvUrl(channel.url, channel.type))
+    .sort((a, b) => channelReliabilityScore(b) - channelReliabilityScore(a) || a.name.localeCompare(b.name))
+    .forEach((channel) => {
+      const stableId = /^[A-Z]{2}-\d+$/i.test(channel.id) ? '' : channel.id;
+      const key = `${normalize(stableId || channel.name)}|${normalizeCountryCode(channel.country)}`;
+      const existing = byChannel.get(key);
+      if (!existing) {
+        byChannel.set(key, { ...channel, alternateUrls: collectAlternateUrls(channel) });
+        return;
+      }
+      const alternates = new Set([...(existing.alternateUrls || []), ...collectAlternateUrls(channel)]);
+      existing.alternateUrls = [...alternates].slice(0, 8);
+      if (channelReliabilityScore(channel) > channelReliabilityScore(existing)) {
+        byChannel.set(key, { ...channel, alternateUrls: existing.alternateUrls });
+      }
+    });
+  return [...byChannel.values()].sort((a, b) => channelReliabilityScore(b) - channelReliabilityScore(a) || a.name.localeCompare(b.name));
 }
 
 function scheduleCountryRender() {
@@ -2267,7 +2285,7 @@ function renderChannels() {
           </div>
           <div class="channel-actions">
             <button class="mini-button favorite ${appState.favorites.has(channel.url) ? 'active' : ''}" data-favorite-index="${index}" title="${appState.favorites.has(channel.url) ? t('removeFavorite') : t('addFavorite')}">${icons.star}</button>
-            <button class="mini-button play-channel" data-url="${escapeHtml(sanitizeUrl(channel.url))}" data-title="${escapeHtml(channel.name)}" data-id="${escapeHtml(channel.id)}" data-type="${escapeHtml(channel.type || appState.mediaMode)}" title="${t('play')}">${icons.play}</button>
+            <button class="mini-button play-channel" data-channel-index="${index}" data-url="${escapeHtml(sanitizeUrl(channel.url))}" data-title="${escapeHtml(channel.name)}" data-id="${escapeHtml(channel.id)}" data-type="${escapeHtml(channel.type || appState.mediaMode)}" title="${t('play')}">${icons.play}</button>
           </div>
         </article>
       `
@@ -2437,6 +2455,9 @@ function requestPythonAI() {
 
 function sanitizeChannel(channel) {
   const sourceCategory = String(channel?.sourceCategory || channel?.group || channel?.category || 'General').slice(0, 120);
+  const alternateUrls = Array.isArray(channel?.alternateUrls)
+    ? channel.alternateUrls.map(sanitizeUrl).filter(Boolean).slice(0, 8)
+    : [];
   return {
     id: String(channel?.id || '').slice(0, 120),
     name: String(channel?.name || 'Live TV').slice(0, 160),
@@ -2447,8 +2468,47 @@ function sanitizeChannel(channel) {
     group: String(channel?.group || 'General').slice(0, 80),
     quality: String(channel?.quality || '').slice(0, 32),
     country: String(channel?.country || '').slice(0, 4),
-    type: String(channel?.type || appState.mediaMode || 'tv').slice(0, 12)
+    type: String(channel?.type || appState.mediaMode || 'tv').slice(0, 12),
+    alternateUrls
   };
+}
+
+function collectAlternateUrls(channel) {
+  const urls = [channel.url, ...(Array.isArray(channel.alternateUrls) ? channel.alternateUrls : [])]
+    .map(sanitizeUrl)
+    .filter(Boolean);
+  return [...new Set(urls)].sort((a, b) => urlReliabilityScore(b) - urlReliabilityScore(a));
+}
+
+function isLikelyPlayableTvUrl(url, type = 'tv') {
+  if (type === 'radio') return Boolean(url);
+  const normalized = String(url || '').toLowerCase();
+  if (!normalized) return false;
+  if (normalized.includes('/youtube.com/') || normalized.includes('youtu.be/')) return false;
+  if (normalized.includes('/facebook.com/') || normalized.includes('/twitch.tv/')) return false;
+  if (/\.(m3u8|mpd|mp4)(?:[?#]|$)/i.test(normalized)) return true;
+  return normalized.includes('m3u8') || normalized.includes('mpegts') || normalized.includes('playlist');
+}
+
+function urlReliabilityScore(url) {
+  const normalized = String(url || '').toLowerCase();
+  let score = 0;
+  if (normalized.startsWith('https://')) score += 10;
+  if (normalized.includes('.m3u8')) score += 12;
+  if (normalized.includes('/index.m3u8') || normalized.includes('/playlist.m3u8')) score += 3;
+  if (normalized.includes('.mpd')) score += 7;
+  if (normalized.includes('.mp4')) score += 5;
+  if (normalized.includes('token=') || normalized.includes('expires=') || normalized.includes('sig=')) score -= 4;
+  if (normalized.includes('youtube') || normalized.includes('facebook') || normalized.includes('twitch')) score -= 40;
+  return score;
+}
+
+function channelReliabilityScore(channel) {
+  let score = urlReliabilityScore(channel.url);
+  if (channel.quality) score += 2;
+  if (channel.id) score += 1;
+  if (Array.isArray(channel.alternateUrls) && channel.alternateUrls.length) score += Math.min(channel.alternateUrls.length, 4);
+  return score;
 }
 
 function normalizeCountry(country) {
@@ -2581,7 +2641,11 @@ function playRandomChannel() {
 }
 
 async function playChannel(rawUrl, rawTitle = 'Live TV', options = {}) {
-  const url = sanitizeUrl(rawUrl);
+  const candidateUrls = collectAlternateUrls({
+    url: rawUrl,
+    alternateUrls: options.channel?.alternateUrls || []
+  }).filter((candidate) => !appState.failedStreams.has(candidate));
+  const url = candidateUrls[0];
   if (!url) {
     showToast(t('unsafeStream'));
     return;
@@ -2606,15 +2670,64 @@ async function playChannel(rawUrl, rawTitle = 'Live TV', options = {}) {
     document.getElementById('livePlayer').classList.add('open');
     await ensureVideoPlayer();
 
-    appState.player.src({ src: url, type: streamType(url) });
-    const playResult = appState.player.play();
-    if (playResult?.catch) {
-      playResult.catch(() => showToast(t('pressPlayStream')));
-    }
+    await playTvCandidate(candidateUrls, rawTitle, options);
   } catch (error) {
     showToast(t('playerError'));
     window.open(url, '_blank', 'noopener,noreferrer');
   }
+}
+
+async function playTvCandidate(urls, title, options = {}, attempt = 0) {
+  const url = sanitizeUrl(urls[attempt]);
+  if (!url) throw new Error('No playable TV URL');
+  const player = appState.player;
+  let fallbackTimer;
+  let finished = false;
+  const clearFallback = () => {
+    finished = true;
+    window.clearTimeout(fallbackTimer);
+    player.off('loadedmetadata', clearFallback);
+    player.off('playing', clearFallback);
+  };
+  const onError = () => {
+    if (finished) return;
+    finished = true;
+    clearFallback();
+    player.off('error', onError);
+    appState.failedStreams.add(url);
+    const nextAttempt = attempt + 1;
+    if (nextAttempt < urls.length) {
+      showToast(t('tryingAlternateStream'));
+      playTvCandidate(urls, title, options, nextAttempt).catch(() => {
+        showToast(t('playerError'));
+        window.open(urls[nextAttempt], '_blank', 'noopener,noreferrer');
+      });
+      return;
+    }
+    showToast(t('playerError'));
+  };
+
+  player.off('error');
+  player.one('error', onError);
+  player.one('loadedmetadata', clearFallback);
+  player.one('playing', clearFallback);
+  fallbackTimer = window.setTimeout(onError, 10_000);
+  player.src({ src: url, type: streamType(url) });
+  player.ready(() => {
+    const playResult = appState.player.play();
+    if (playResult?.catch) {
+      playResult.catch(() => {
+        clearFallback();
+        appState.failedStreams.add(url);
+        if (attempt + 1 < urls.length) {
+          showToast(t('tryingAlternateStream'));
+          playTvCandidate(urls, title, options, attempt + 1);
+          return;
+        }
+        showToast(t('pressPlayStream'));
+      });
+    }
+  });
 }
 
 async function playRadio(url, title = 'Live Radio', stationId = '') {
