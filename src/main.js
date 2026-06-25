@@ -229,7 +229,6 @@ const translations = {
     changeCountry: 'Change country',
     searchCountry: 'Search country',
     loadingCountries: 'Loading countries...',
-    advertisement: 'Advertisement',
     selectChannel: 'Select a channel',
     selectRadio: 'Select a radio station',
     pip: 'Picture in picture',
@@ -341,7 +340,7 @@ const translations = {
     ready: 'Listo', readyDetail: 'Mueve el globo hasta que un país quede dentro del círculo rojo', fastMode: 'Modo rápido',
     chooseFromGlobe: 'Elige desde el globo', heroHint: 'Mueve el globo, coloca un país en el círculo rojo y haz clic.',
     chooseCountry: 'Elegir país', selectCountry: 'Selecciona un país', changeCountry: 'Cambiar país',
-    searchCountry: 'Buscar país', loadingCountries: 'Cargando países...', advertisement: 'Publicidad',
+    searchCountry: 'Buscar país', loadingCountries: 'Cargando países...',
     selectChannel: 'Selecciona un canal', selectRadio: 'Selecciona una emisora', pip: 'Imagen en imagen',
     close: 'Cerrar', freeChannels: 'Canales gratis', freeRadio: 'Radio gratis', smartReady: 'Filtro inteligente listo',
     searchChannels: 'Buscar canales o categoría', searchRadio: 'Buscar emisoras, idioma o etiqueta', explore: 'Explorar',
@@ -408,7 +407,7 @@ const translations = {
     ready: 'Prêt', readyDetail: 'Déplacez le globe jusqu’à placer un pays dans le cercle rouge', fastMode: 'Mode rapide',
     chooseFromGlobe: 'Choisir sur le globe', heroHint: 'Déplacez le globe, placez un pays dans le cercle rouge, puis cliquez.',
     chooseCountry: 'Choisir un pays', selectCountry: 'Sélectionner un pays', changeCountry: 'Changer de pays',
-    searchCountry: 'Rechercher un pays', loadingCountries: 'Chargement des pays...', advertisement: 'Publicité',
+    searchCountry: 'Rechercher un pays', loadingCountries: 'Chargement des pays...',
     selectChannel: 'Sélectionner une chaîne', selectRadio: 'Sélectionner une radio', pip: 'Image dans l’image',
     close: 'Fermer', freeChannels: 'Chaînes gratuites', freeRadio: 'Radios gratuites', smartReady: 'Filtre intelligent prêt',
     searchChannels: 'Rechercher chaînes ou catégorie', searchRadio: 'Rechercher radios, langue ou tag', explore: 'Explorer',
@@ -475,7 +474,7 @@ const translations = {
     ready: 'جاهز', readyDetail: 'حرّك الكرة حتى تدخل دولة داخل الدائرة الحمراء', fastMode: 'وضع سريع',
     chooseFromGlobe: 'اختر من الكرة', heroHint: 'حرّك الكرة، ضع دولة داخل الدائرة الحمراء، ثم اضغط.',
     chooseCountry: 'اختر دولة', selectCountry: 'اختر دولة', changeCountry: 'تغيير الدولة',
-    searchCountry: 'ابحث عن دولة', loadingCountries: 'جاري تحميل الدول...', advertisement: 'إعلان',
+    searchCountry: 'ابحث عن دولة', loadingCountries: 'جاري تحميل الدول...',
     selectChannel: 'اختر قناة', selectRadio: 'اختر محطة راديو', pip: 'صورة داخل صورة',
     close: 'إغلاق', freeChannels: 'قنوات مجانية', freeRadio: 'راديو مجاني', smartReady: 'الفلتر الذكي جاهز',
     searchChannels: 'ابحث عن قنوات أو تصنيف', searchRadio: 'ابحث عن محطة أو لغة أو وسم', explore: 'استكشاف',
@@ -542,7 +541,7 @@ const translations = {
     ready: 'Pronto', readyDetail: 'Muovi il globo finché un paese entra nel cerchio rosso', fastMode: 'Modalità rapida',
     chooseFromGlobe: 'Scegli dal globo', heroHint: 'Muovi il globo, metti un paese nel cerchio rosso e clicca.',
     chooseCountry: 'Scegli un paese', selectCountry: 'Seleziona un paese', changeCountry: 'Cambia paese',
-    searchCountry: 'Cerca paese', loadingCountries: 'Caricamento paesi...', advertisement: 'Pubblicità',
+    searchCountry: 'Cerca paese', loadingCountries: 'Caricamento paesi...',
     selectChannel: 'Seleziona un canale', selectRadio: 'Seleziona una radio', pip: 'Picture in picture',
     close: 'Chiudi', freeChannels: 'Canali gratis', freeRadio: 'Radio gratis', smartReady: 'Filtro intelligente pronto',
     searchChannels: 'Cerca canali o categoria', searchRadio: 'Cerca radio, lingua o tag', explore: 'Esplora',
@@ -785,8 +784,6 @@ function applyLanguage() {
   document.getElementById('openPanelHint').querySelector('span').textContent = t('chooseCountry');
   document.getElementById('changeCountryButton').textContent = t('changeCountry');
   countrySearch.placeholder = t('searchCountry');
-  document.querySelector('.ad-slot-panel')?.setAttribute('aria-label', t('advertisement'));
-  document.querySelector('.ad-slot-panel > span').textContent = t('advertisement');
   pipPlayerButton.title = t('pip');
   closePlayerButton.title = t('close');
   document.querySelectorAll('.about-close, .developer-close').forEach((button) => {
@@ -999,15 +996,6 @@ document.getElementById('root').innerHTML = `
         <label class="search-box">${icons.search}<input id="countrySearch" placeholder="${t('searchCountry')}" /></label>
         <div class="country-list" id="countryList"><p class="muted">${t('loadingCountries')}</p></div>
       </section>
-      <section class="ad-slot ad-slot-panel" aria-label="${t('advertisement')}">
-        <span>${t('advertisement')}</span>
-        <ins class="adsbygoogle"
-          style="display:block"
-          data-ad-client="ca-pub-3496611324359492"
-          data-ad-slot="5276058157"
-          data-ad-format="auto"
-          data-full-width-responsive="true"></ins>
-      </section>
       <div class="channels">
         <section class="player-panel" id="playerPanel">
           <div class="player-head">
@@ -1076,7 +1064,7 @@ document.getElementById('root').innerHTML = `
       <button class="mini-button about-close" id="privacyCloseButton" title="Close">${icons.close}</button>
       <div class="about-copy">
         <h2 id="privacyTitle">Privacy Policy</h2>
-        <p>At WatchNations, we care about your privacy and want you to feel safe while using our platform. This Privacy Policy explains how we handle data, external links, cookies, advertising, analytics, and your browsing experience.</p>
+        <p>At WatchNations, we care about your privacy and want you to feel safe while using our platform. This Privacy Policy explains how we handle data, external links, cookies, analytics, and your browsing experience.</p>
         <h3>Introduction</h3>
         <p>Your privacy is important to us. This policy explains how WatchNations operates and how we protect users while they explore free live TV channels from around the world.</p>
         <p>By using WatchNations, you agree to the terms described in this Privacy Policy.</p>
@@ -1084,10 +1072,9 @@ document.getElementById('root').innerHTML = `
         <p>WatchNations may contain links to external video streams hosted on third-party websites or public platforms.</p>
         <p>While we try to organize and display publicly available sources in good faith, we do not own, host, or control these external websites or streams. Therefore, WatchNations is not responsible for the privacy practices, content, or policies of third-party websites.</p>
         <p>We recommend reviewing the privacy policies of any external websites you visit through WatchNations.</p>
-        <h3>Use of Google Ads</h3>
-        <p>WatchNations may display advertisements provided by Google AdSense or other advertising partners.</p>
-        <p>Google and its partners may use cookies or similar technologies to show ads based on your browsing behavior, interests, or previous visits to websites.</p>
-        <p>You can manage or disable personalized ads through your browser settings or Google ad settings.</p>
+        <h3>No Display Advertising</h3>
+        <p>WatchNations currently keeps the main browsing interface focused on media discovery without sponsored display blocks.</p>
+        <p>If sponsorship features are added in the future, this policy will be updated clearly before those features are enabled.</p>
         <h3>Use of Google Analytics</h3>
         <p>WatchNations may use Google Analytics or similar analytics tools to understand how visitors interact with the website and to improve the user experience.</p>
         <p>Analytics data may include general information such as:</p>
@@ -1110,7 +1097,7 @@ document.getElementById('root').innerHTML = `
         <p>WatchNations does not intentionally request, collect, store, or process personal information such as your name, address, phone number, or payment details.</p>
         <p>Our goal is to provide a simple and open browsing experience without requiring personal data from users.</p>
         <h3>Third-Party Trackers</h3>
-        <p>WatchNations does not intentionally embed third-party trackers except for services related to analytics, advertising, or basic website functionality.</p>
+        <p>WatchNations does not intentionally embed third-party trackers except for services related to analytics or basic website functionality.</p>
         <p>We do not sell your personal data to third parties.</p>
         <h3>Favorite Channels</h3>
         <p>If WatchNations includes a "Favorite Channels" feature, your favorite channels may be stored locally in your browser.</p>
@@ -1174,7 +1161,7 @@ document.getElementById('root').innerHTML = `
         <p>Your privacy is important to us.</p>
         <p>WatchNations does not require users to register or provide personal details such as name, email, phone number, or payment information.</p>
         <p>We may use tools such as Google Analytics to understand general website usage, such as pages visited, popular countries, device type, and general traffic behavior. This helps us improve the platform.</p>
-        <p>We may also use Google AdSense or other advertising partners to display ads. These services may use cookies to provide ads and measure performance.</p>
+        <p>WatchNations does not require an account, subscription, or signup to browse the available media guide.</p>
         <p>You can manage cookies and privacy preferences through your browser settings.</p>
         <h3>Where are my favorite channels saved?</h3>
         <p>If WatchNations includes a favorite channels feature, your favorites may be saved locally in your browser.</p>
@@ -1522,7 +1509,6 @@ updateClock();
 updateMediaLabels();
 loadCountries();
 requestAnimationFrame(() => initGlobe());
-initializeAds();
 applyLanguage();
 
 function scheduleIdleTask(task, timeout = 4000) {
@@ -2928,21 +2914,6 @@ function loadScriptOnce(id, src) {
     script.onerror = reject;
     document.head.appendChild(script);
   });
-}
-
-function initializeAds() {
-  const run = () => {
-    document.querySelectorAll('.adsbygoogle:not([data-watchnations-loaded])').forEach((slot) => {
-      slot.dataset.watchnationsLoaded = 'true';
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (error) {
-        slot.closest('.ad-slot')?.classList.add('ad-pending');
-      }
-    });
-  };
-
-  scheduleIdleTask(run, 8000);
 }
 
 function showToast(message) {

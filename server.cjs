@@ -60,42 +60,126 @@ const SEO_CATEGORIES = [
   ['weather', 'Weather', 'weather forecast TV channels']
 ];
 const SEO_KEYWORDS = [
-  'watch global tv online free',
-  'watch local tv online free',
-  'free live tv no subscription',
-  'tv streaming no signup',
-  'international tv channels free',
-  'world tv channels streaming',
-  'live TV',
-  'free streaming',
-  'online television',
-  'news live',
-  'sports streaming',
-  'regarder tv en direct gratuit',
-  'tv en direct monde entier',
-  'watch tv channels by country',
-  'interactive 3d globe tv channels',
-  'discover international tv channels',
-  'listen to radio stations worldwide',
-  'free tv no account required',
-  'random tv channel generator',
-  'random tv channel discovery',
-  'watch global tv online',
-  'watch international tv live free',
-  'world tv channel list',
-  'global tv channel list free',
-  'watch news from around the world',
-  'iptv list by country',
-  'free live tv online',
-  'free live tv streaming',
-  'free iptv channels',
-  'global tv channel aggregator',
-  'مشاهدة قنوات عربية بث مباشر مجانا',
-  'قنوات عربية بث مباشر بدون اشتراك',
-  'قنوات سعودية بث مباشر',
-  'قنوات مصرية بث مباشر مجاني',
-  'قنوات اماراتية اونلاين',
-  'مشاهدة قنوات عربية بث مباشر'
+  "watch global tv online free",
+  "watch local tv online free",
+  "free live tv no subscription",
+  "tv streaming no signup",
+  "international tv channels free",
+  "world tv channels streaming",
+  "live TV",
+  "free streaming",
+  "online television",
+  "news live",
+  "sports streaming",
+  "regarder tv en direct gratuit",
+  "tv en direct monde entier",
+  "watch tv channels by country",
+  "interactive 3d globe tv channels",
+  "discover international tv channels",
+  "listen to radio stations worldwide",
+  "free tv no account required",
+  "random tv channel discovery",
+  "global tv channel aggregator",
+  "watch reality tv online free",
+  "watch live tv without registration",
+  "world tv streaming live streaming",
+  "discover tv channels online free",
+  "watch business tv online free",
+  "watch canada tv online free",
+  "saudi arabia live tv streaming",
+  "free tv channels without registration",
+  "watch sports online online free",
+  "world tv streaming channels list",
+  "watch family tv online free",
+  "watch sports online no signup",
+  "free live tv without registration",
+  "watch comedy tv online free",
+  "digital tv channels free online",
+  "watch global tv channels list",
+  "watch kids tv online free",
+  "world tv streaming without registration",
+  "how to free live tv",
+  "watch tv streaming no signup",
+  "watch cooking tv online free",
+  "discover tv channels live streaming",
+  "saudi arabia tv app free",
+  "news channels live online free",
+  "world tv streaming online free",
+  "international tv channels online free",
+  "watch live tv online free",
+  "watch health tv online free",
+  "watch fashion tv online free",
+  "watch nature tv online free",
+  "saudi arabia movies online free",
+  "international tv channels live streaming",
+  "قنوات عربية مجانية بدون تسجيل",
+  "watch educational tv online free",
+  "watch tv on laptop free",
+  "watch news tv online free",
+  "watch mexico tv online free",
+  "world tv streaming no subscription",
+  "watch indonesia tv online free",
+  "discover tv channels no signup",
+  "watch sports tv online free",
+  "random tv channel live streaming",
+  "watch global tv by country",
+  "tv online free live streaming",
+  "free tv app no signup",
+  "watch science tv online free",
+  "discover tv channels no subscription",
+  "free saudi arabia tv channels",
+  "watch global tv live streaming",
+  "watch global tv without registration",
+  "watch cartoon tv online free",
+  "how to discover tv channels",
+  "watch germany tv online free",
+  "watch nigeria tv online free",
+  "saudi arabia tv channels online",
+  "saudi arabia tv guide online",
+  "free tv channel aggregator worldwide",
+  "watch france tv online free",
+  "watch korea tv online free",
+  "مشاهدة مسلسلات عربية بث مباشر",
+  "موقع قنوات عربية hd بث مباشر",
+  "افضل موقع قنوات عربية للمغتربين مجاني",
+  "بث مباشر قنوات عربية بدون تقطيع",
+  "قنوات عربية للاطفال تعليمية بث مباشر",
+  "قنوات مسيحية عربية بث مباشر مجاني",
+  "كيف اشاهد قنوات عربية بث مباشر مجاني بدون تسجيل",
+  "documentaires live gratuit",
+  "oesterreich sender kostenlos",
+  "niederlande streaming gratis",
+  "dokumentationen sender kostenlos",
+  "nachrichten streaming gratis",
+  "kostenlos dokumentationen online",
+  "unterhaltung sender kostenlos",
+  "chaines actualites gratuites",
+  "chaines religion gratuites",
+  "voir documentaires gratuit",
+  "watch indian tv usa",
+  "ver chile online gratis",
+  "canales de chile gratis",
+  "regarder divertissement en direct",
+  "tv italiana online gratis",
+  "tv brasileira online gratis",
+  "canales de tv gratis",
+  "ver argentina online gratis",
+  "ver peliculas online gratis",
+  "watch indian tv uk",
+  "programas de tv online",
+  "tv indonesia online gratis",
+  "tv sverige online gratis",
+  "ver italia online gratis",
+  "canales de brasil gratis",
+  "canales de moda gratis",
+  "ver religion online gratis",
+  "cote ivoire live gratuit",
+  "tv divertissement sans inscription",
+  "مسلسلات عربية بث مباشر",
+  "canais de tv gratis",
+  "divertissement tv en ligne",
+  "مشاهدة قنوات فلسطينية بث مباشر",
+  "مشاهدة قنوات موسيقى بث مباشر"
 ];
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -104,6 +188,7 @@ const types = {
   '.json': 'application/json; charset=utf-8',
   '.geojson': 'application/geo+json; charset=utf-8',
   '.png': 'image/png',
+  '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8',
   '.xml': 'application/xml; charset=utf-8',
   '.webmanifest': 'application/manifest+json; charset=utf-8'
@@ -224,7 +309,7 @@ const server = http.createServer((request, response) => {
     }
 
     if (isSeoRoute(url.pathname)) {
-      sendTextResponse(request, response, 200, renderSeoRoute(url.pathname), 'text/html; charset=utf-8', 'public, max-age=3600');
+      sendTextResponse(request, response, 200, renderSeoRoute(url.pathname), 'text/html; charset=utf-8', 'no-cache, max-age=0, must-revalidate');
       return;
     }
 
@@ -400,7 +485,7 @@ function renderSeoRoute(pathname) {
     return seoPage({
       path: pathname,
       title: 'Privacy Policy - WatchNations',
-      description: 'Read the WatchNations privacy policy covering external links, local favorites, analytics, advertising, cookies, and user privacy.',
+      description: 'Read the WatchNations privacy policy covering external links, local favorites, analytics, cookies, and user privacy.',
       heading: 'Privacy Policy',
       body: [
         'WatchNations does not require users to create an account or provide personal information to browse free live TV and radio sources.',
@@ -435,7 +520,7 @@ function renderSeoRoute(pathname) {
   return seoPage({
     path: '/',
     title: 'WatchNations - Watch Global TV Online Free',
-    description: 'Watch global TV online free, watch local TV online free, discover international TV channels free, and enjoy free live TV with no subscription or signup.',
+    description: 'Watch global TV online free by country with no signup. Explore live news, sports, radio, and international channels.',
     heading: 'WatchNations',
     body: [
       'WatchNations is a global TV channel aggregator for people who want to watch global TV online free, watch local TV online free, browse a world TV channel list, and discover international TV channels free.',
@@ -557,6 +642,7 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   const canonical = `https://watchnations.com${pathname === '/' ? '/' : pathname}`;
   const paragraphs = body.map((text) => `<p>${escapeHtml(text)}</p>`).join('');
   const action = cta ? `<p><a class="button" href="${escapeHtml(cta.href)}">${escapeHtml(cta.label)}</a></p>` : '<p><a class="button" href="/">Open WatchNations App</a></p>';
+  const internalLinks = '<nav aria-label="Internal links"><a href="/">Home</a><a href="/countries">Countries</a><a href="/categories">Categories</a><a href="/categories/news">News</a><a href="/categories/sports">Sports</a><a href="/categories/kids">Kids TV</a><a href="/countries/us">United States</a><a href="/countries/sa">Saudi Arabia</a><a href="/countries/fr">France</a></nav>';
   return `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
@@ -570,13 +656,16 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <meta name="google-site-verification" content="BOGebDfiNtUgDvVuRNuqb7sQb92qcvZ3Y-CkEgRrhKE">
   <link rel="canonical" href="${escapeHtml(canonical)}">
-  <link rel="icon" href="/assets/watchnations-tv-logo.png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon-180.png">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="WatchNations">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:url" content="${escapeHtml(canonical)}">
-  <meta property="og:image" content="https://watchnations.com/assets/watchnations-tv-logo.png">
+  <meta property="og:image" content="https://watchnations.com/assets/favicon-512.png">
   <style>
     :root{color:#f7f9fb;background:#050609;font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif}
     body{margin:0;background:#050609;color:#f7f9fb;line-height:1.7}
@@ -596,6 +685,7 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
     <h1>${escapeHtml(heading)}</h1>
     ${bodyHtml || paragraphs}
     ${action}
+    ${internalLinks}
   </main>
   <footer>WatchNations does not host video streams. It organizes publicly available external links in good faith.</footer>
 </body>
@@ -663,7 +753,7 @@ function allowApiRequest(request, response) {
 
 function isAllowedStaticPath(filePath) {
   if (filePath === path.join(rootPath, 'index.html')) return true;
-  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml'].some((file) => filePath === path.join(rootPath, file))) return true;
+  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml', 'favicon.ico'].some((file) => filePath === path.join(rootPath, file))) return true;
   const relative = path.relative(rootPath, filePath);
   const [topLevel] = relative.split(path.sep);
   return ['src', 'data', 'assets'].includes(topLevel);
@@ -672,10 +762,13 @@ function isAllowedStaticPath(filePath) {
 function staticCacheControl(filePath) {
   const relative = path.relative(rootPath, filePath);
   const [topLevel] = relative.split(path.sep);
-  if (topLevel === 'data' || topLevel === 'assets') return 'public, max-age=604800';
-  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml'].includes(relative)) return 'public, max-age=3600';
-  if (topLevel === 'src') return 'no-cache';
-  return 'no-store';
+  if (relative === 'index.html') return 'no-cache, max-age=0, must-revalidate';
+  if (relative === 'favicon.ico') return 'public, max-age=604800, stale-while-revalidate=86400';
+  if (topLevel === 'assets') return 'public, max-age=31536000, immutable';
+  if (topLevel === 'data') return 'public, max-age=3600, stale-while-revalidate=86400';
+  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml'].includes(relative)) return 'public, max-age=3600, stale-while-revalidate=86400';
+  if (topLevel === 'src') return 'no-cache, max-age=0, must-revalidate';
+  return 'no-cache, max-age=0, must-revalidate';
 }
 
 function readJson(request) {
@@ -1068,10 +1161,10 @@ function setSecurityHeaders(response) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
+      "script-src 'self' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net",
       "style-src 'self' 'unsafe-inline' https://vjs.zencdn.net",
       "img-src 'self' https: data:",
-      "connect-src 'self' https: http: https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net",
+      "connect-src 'self' https: http:",
       "media-src https: http: blob:",
       "frame-src https: http:",
       "font-src 'self' data:",
