@@ -1153,11 +1153,9 @@ function jsRankFallback(payload) {
 
 function setSecurityHeaders(response) {
   response.setHeader('X-Content-Type-Options', 'nosniff');
-  response.setHeader('Referrer-Policy', 'no-referrer');
+  response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.setHeader('X-Frame-Options', 'DENY');
   response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-  response.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
   response.setHeader('X-DNS-Prefetch-Control', 'off');
   response.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
   response.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
@@ -1165,7 +1163,7 @@ function setSecurityHeaders(response) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'strict-dynamic' 'nonce-watchnations-static' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' 'sha256-+bQOliol+ytXZaCjvSH0a++UPKVfx1F0YpmjV9SCjkQ=' 'sha256-Jnu8X52B2puZNkxcgkLJcPZ+OrWL0saekGDZIfW3u0I='",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:",
       "style-src 'self' 'unsafe-inline' https://vjs.zencdn.net",
       "img-src 'self' https: data:",
       "connect-src 'self' https: http:",
@@ -1176,9 +1174,7 @@ function setSecurityHeaders(response) {
       "object-src 'none'",
       "base-uri 'none'",
       "frame-ancestors 'none'",
-      "form-action 'none'",
-      "trusted-types default",
-      "require-trusted-types-for 'script'"
+      "form-action 'none'"
     ].join('; ')
   );
 }
