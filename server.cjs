@@ -384,6 +384,9 @@ function sendStaticFile(request, response, filePath) {
         'ETag': etag,
         'Vary': 'Accept-Encoding'
       };
+      if (path.relative(rootPath, filePath) === 'hdWiS7.js') {
+        headers['Service-Worker-Allowed'] = '/';
+      }
       const encoded = compressStaticBody(request, filePath, data, etag);
       if (encoded.encoding) headers['Content-Encoding'] = encoded.encoding;
 
@@ -1152,6 +1155,7 @@ function setSecurityHeaders(response) {
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('Referrer-Policy', 'no-referrer');
   response.setHeader('X-Frame-Options', 'DENY');
+  response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   response.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
   response.setHeader('X-DNS-Prefetch-Control', 'off');
@@ -1161,7 +1165,7 @@ function setSecurityHeaders(response) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' 'sha256-5btVofI9akSlhjAZ3CytdyRkcn2B46Id/awuxk8YuKU=' https: http:",
+      "script-src 'self' 'strict-dynamic' 'nonce-watchnations-static' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' 'sha256-+bQOliol+ytXZaCjvSH0a++UPKVfx1F0YpmjV9SCjkQ=' 'sha256-tbejv1j5OV6D9ayaa3O+pDetvs/7BtrCJx0MxxejiEY='",
       "style-src 'self' 'unsafe-inline' https://vjs.zencdn.net",
       "img-src 'self' https: data:",
       "connect-src 'self' https: http:",
@@ -1172,7 +1176,9 @@ function setSecurityHeaders(response) {
       "object-src 'none'",
       "base-uri 'none'",
       "frame-ancestors 'none'",
-      "form-action 'none'"
+      "form-action 'none'",
+      "trusted-types default",
+      "require-trusted-types-for 'script'"
     ].join('; ')
   );
 }

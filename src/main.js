@@ -2180,7 +2180,7 @@ function renderCountries() {
       (country) => `
         <button data-code="${escapeHtml(country.code)}" class="${country.code === appState.selectedCountry?.code ? 'selected' : ''}">
           <span class="country-flag" aria-hidden="true">
-            <img src="${escapeHtml(flagImageUrl(country.code, 80))}" srcset="${escapeHtml(flagSrcSet(country.code))}" alt="" loading="lazy" />
+            <img src="${escapeHtml(flagImageUrl(country.code, 40))}" srcset="${escapeHtml(flagSrcSet(country.code, 40))}" alt="" loading="lazy" decoding="async" fetchpriority="low" />
             <span class="country-flag-fallback">${escapeHtml(country.code)}</span>
           </span>
           <span>${escapeHtml(country.name)}</span>
@@ -2205,7 +2205,7 @@ function renderNewspaperCountries() {
       return `
         <button data-code="${escapeHtml(country.key)}" class="${country.key === appState.selectedNewspaperCountry?.key ? 'selected' : ''}">
           <span class="country-flag" aria-hidden="true">
-            ${country.code ? `<img src="${escapeHtml(flagImageUrl(country.code, 80))}" srcset="${escapeHtml(flagSrcSet(country.code))}" alt="" loading="lazy" />` : ''}
+            ${country.code ? `<img src="${escapeHtml(flagImageUrl(country.code, 40))}" srcset="${escapeHtml(flagSrcSet(country.code, 40))}" alt="" loading="lazy" decoding="async" fetchpriority="low" />` : ''}
             <span class="country-flag-fallback">${escapeHtml(country.code || 'NP')}</span>
           </span>
           <span>${escapeHtml(displayName)}</span>
@@ -3907,13 +3907,16 @@ function flagImageUrl(code, width = 160) {
   return `https://flagcdn.com/w${safeWidth}/${code}.png`;
 }
 
-function flagSrcSet(code) {
+function flagSrcSet(code, width = 80) {
   code = normalizeCountryCode(code).toLowerCase();
   if (!/^[a-z]{2}$/.test(code)) return '';
+  const baseWidth = [40, 80, 120, 160].includes(Number(width)) ? Number(width) : 80;
+  const doubleWidth = Math.min(baseWidth * 2, 320);
+  const tripleWidth = Math.min(baseWidth * 3, 320);
   return [
-    `https://flagcdn.com/w80/${code}.png 1x`,
-    `https://flagcdn.com/w160/${code}.png 2x`,
-    `https://flagcdn.com/w320/${code}.png 3x`
+    `https://flagcdn.com/w${baseWidth}/${code}.png 1x`,
+    `https://flagcdn.com/w${doubleWidth}/${code}.png 2x`,
+    `https://flagcdn.com/w${tripleWidth}/${code}.png 3x`
   ].join(', ');
 }
 

@@ -20,9 +20,16 @@ Copyright and DMCA requests can be sent to: lindaraymane@gmail.com
 
 ## Important Pages
 
-- Home: https://watchnations.com/
-- Sitemap: https://watchnations.com/sitemap.xml
-- Robots: https://watchnations.com/robots.txt
+- [Home](https://watchnations.com/)
+- [Countries](https://watchnations.com/countries)
+- [Categories](https://watchnations.com/categories)
+- [News Channels](https://watchnations.com/categories/news)
+- [Sports Channels](https://watchnations.com/categories/sports)
+- [Kids TV Channels](https://watchnations.com/categories/kids)
+- [About](https://watchnations.com/about)
+- [FAQ](https://watchnations.com/faq)
+- [Sitemap](https://watchnations.com/sitemap.xml)
+- [Robots](https://watchnations.com/robots.txt)
 
 ## Best Summary
 
