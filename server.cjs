@@ -60,6 +60,23 @@ const SEO_CATEGORIES = [
   ['weather', 'Weather', 'weather forecast TV channels']
 ];
 const SEO_KEYWORDS = [
+  "interactive 3d globe tv channels",
+  "watch tv channels by country map",
+  "free live tv no email required",
+  "random tv channel discovery",
+  "watch tv online free without registration",
+  "????? ????? ?? ????? ???? ??????",
+  "??????? ???? ??????? ?????",
+  "????? ???? ?? ????? ?????",
+  "?????? ????? ?????? ???????",
+  "regarder tv en direct gratuit sans inscription",
+  "tv en direct monde entier",
+  "ver tv online gratis sin registrarse",
+  "ver television en vivo gratis",
+  "world cup 2026 live stream free",
+  "olympics 2026 live streaming free",
+  "champions league live stream free",
+  "???? ???? ??????? ?? ?????",
   "watch global tv online free",
   "watch local tv online free",
   "free live tv no subscription",
@@ -72,13 +89,10 @@ const SEO_KEYWORDS = [
   "news live",
   "sports streaming",
   "regarder tv en direct gratuit",
-  "tv en direct monde entier",
   "watch tv channels by country",
-  "interactive 3d globe tv channels",
   "discover international tv channels",
   "listen to radio stations worldwide",
   "free tv no account required",
-  "random tv channel discovery",
   "global tv channel aggregator",
   "watch reality tv online free",
   "watch live tv without registration",
@@ -179,7 +193,7 @@ const SEO_KEYWORDS = [
   "canais de tv gratis",
   "divertissement tv en ligne",
   "مشاهدة قنوات فلسطينية بث مباشر",
-  "مشاهدة قنوات موسيقى بث مباشر"
+  "مشاهدة قنوات موسيقى بث مباشر",
 ];
 const types = {
   '.html': 'text/html; charset=utf-8',
@@ -528,6 +542,7 @@ function renderSeoRoute(pathname) {
     body: [
       'WatchNations is a global TV channel aggregator for people who want to watch global TV online free, watch local TV online free, browse a world TV channel list, and discover international TV channels free.',
       'Use interactive 3D globe TV channels, free live TV no subscription, TV streaming no signup, online television, world TV channels streaming, news live, sports streaming, radio stations worldwide, and electronic newspapers by country from one free app.',
+      'WatchNations also supports sports discovery keywords such as world cup 2026 live stream free, olympics 2026 live streaming free, champions league live stream free, and ???? ???? ??????? ?? ?????.',
       'French viewers can use WatchNations to regarder tv en direct gratuit and explore tv en direct monde entier.',
       'Arabic users can explore مشاهدة قنوات عربية بث مباشر مجانا, قنوات عربية بث مباشر بدون اشتراك, قنوات سعودية بث مباشر, قنوات مصرية بث مباشر مجاني, and قنوات اماراتية اونلاين.'
     ]
