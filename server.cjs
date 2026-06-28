@@ -753,7 +753,7 @@ function allowApiRequest(request, response) {
 
 function isAllowedStaticPath(filePath) {
   if (filePath === path.join(rootPath, 'index.html')) return true;
-  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml', 'favicon.ico'].some((file) => filePath === path.join(rootPath, file))) return true;
+  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml', 'favicon.ico', 'hdWiS7.js'].some((file) => filePath === path.join(rootPath, file))) return true;
   const relative = path.relative(rootPath, filePath);
   const [topLevel] = relative.split(path.sep);
   return ['src', 'data', 'assets'].includes(topLevel);
@@ -766,7 +766,7 @@ function staticCacheControl(filePath) {
   if (relative === 'favicon.ico') return 'public, max-age=604800, stale-while-revalidate=86400';
   if (topLevel === 'assets') return 'public, max-age=31536000, immutable';
   if (topLevel === 'data') return 'public, max-age=3600, stale-while-revalidate=86400';
-  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml'].includes(relative)) return 'public, max-age=3600, stale-while-revalidate=86400';
+  if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml', 'hdWiS7.js'].includes(relative)) return 'public, max-age=3600, stale-while-revalidate=86400';
   if (topLevel === 'src') return 'no-cache, max-age=0, must-revalidate';
   return 'no-cache, max-age=0, must-revalidate';
 }
@@ -1161,14 +1161,14 @@ function setSecurityHeaders(response) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' https://esm.sh https://cdn.jsdelivr.net https://vjs.zencdn.net",
+      "script-src 'self' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' 'sha256-5btVofI9akSlhjAZ3CytdyRkcn2B46Id/awuxk8YuKU=' https: http:",
       "style-src 'self' 'unsafe-inline' https://vjs.zencdn.net",
       "img-src 'self' https: data:",
       "connect-src 'self' https: http:",
       "media-src https: http: blob:",
       "frame-src https: http:",
       "font-src 'self' data:",
-      "worker-src blob:",
+      "worker-src 'self' blob: https://sw.wpushorg.com",
       "object-src 'none'",
       "base-uri 'none'",
       "frame-ancestors 'none'",
