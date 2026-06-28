@@ -3293,7 +3293,7 @@ async function drawWorldTexture(selectedCode) {
     appState.geojson.features.forEach((feature, index) => {
       const iso = getFeatureCountryCode(feature);
       if (!iso) return;
-      const countryColor = countryDisplayColor(index, iso === selectedCode);
+      const countryColor = countryDisplayColor(index, iso === selectedCode, iso);
       appState.globe.featureByCode.set(iso, feature);
       appState.countryCenters.set(iso, featureCenter(feature));
 
@@ -3792,10 +3792,16 @@ function ctxFromCanvas(canvas) {
   return canvas.getContext('2d');
 }
 
-function countryDisplayColor(index, selected) {
+function countryDisplayColor(index, selected, code = '') {
   if (selected) return '#f4fff0';
-  const base = palette[index % palette.length];
+  const normalized = normalizeCountryCode(code);
+  const colorIndex = normalized ? stableCountryColorIndex(normalized) : index;
+  const base = palette[colorIndex % palette.length];
   return base;
+}
+
+function stableCountryColorIndex(code) {
+  return [...code].reduce((total, char) => total + char.charCodeAt(0), 0);
 }
 
 function getFeatureCountryCode(feature) {
