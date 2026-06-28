@@ -1334,7 +1334,7 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && developerModal.classList.contains('open')) closeDeveloperModal();
 });
 
-scheduleIdleTask(trackRealVisitor, 3000);
+scheduleIdleTask(trackRealVisitor, 8000);
 
 countrySearch.addEventListener('input', (event) => {
   appState.query = event.target.value;
@@ -1507,8 +1507,9 @@ function categoryLabel(categoryId) {
 setInterval(updateClock, 1000);
 updateClock();
 updateMediaLabels();
+showGlobeLoading();
 loadCountries();
-requestAnimationFrame(() => initGlobe());
+scheduleIdleTask(initGlobe, 1600);
 applyLanguage();
 
 function scheduleIdleTask(task, timeout = 4000) {
@@ -1520,8 +1521,18 @@ function scheduleIdleTask(task, timeout = 4000) {
 }
 
 async function initGlobe() {
+  showGlobeLoading();
+  try {
+    if ('connection' in navigator && navigator.connection?.saveData) {
+      setGlobeStatus(t('ready'), t('chooseFromGlobe'));
+      return;
+    }
+  } catch (error) {
+    // Keep the globe enabled if the Network Information API is unavailable.
+  }
+
+  await nextFrame();
   const mount = document.getElementById('globeStage');
-  mount.innerHTML = `<div class="globe-loading"><span>${brandLogo}</span><strong>${t('loadingGlobe')}</strong></div>`;
 
   try {
     const threeModule = await loadGlobeModules();
@@ -1531,6 +1542,17 @@ async function initGlobe() {
   } catch (error) {
     mount.innerHTML = `<div class="globe-loading error-state"><span>${brandLogo}</span><strong>${t('globeError')}</strong></div>`;
   }
+}
+
+function showGlobeLoading() {
+  const mount = document.getElementById('globeStage');
+  if (!mount || mount.dataset.loadingReady === 'true') return;
+  mount.dataset.loadingReady = 'true';
+  mount.innerHTML = `<div class="globe-loading"><span>${brandLogo}</span><strong>${t('loadingGlobe')}</strong></div>`;
+}
+
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
 }
 
 async function loadGlobeModules() {

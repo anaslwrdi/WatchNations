@@ -1165,7 +1165,7 @@ function setSecurityHeaders(response) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'strict-dynamic' 'nonce-watchnations-static' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' 'sha256-+bQOliol+ytXZaCjvSH0a++UPKVfx1F0YpmjV9SCjkQ=' 'sha256-tbejv1j5OV6D9ayaa3O+pDetvs/7BtrCJx0MxxejiEY='",
+      "script-src 'self' 'strict-dynamic' 'nonce-watchnations-static' 'sha256-dQ/lscS4ySTLL6Y7qdfhfM7oyHHDmS+qiDbr8eK+A+k=' 'sha256-+bQOliol+ytXZaCjvSH0a++UPKVfx1F0YpmjV9SCjkQ=' 'sha256-Jnu8X52B2puZNkxcgkLJcPZ+OrWL0saekGDZIfW3u0I='",
       "style-src 'self' 'unsafe-inline' https://vjs.zencdn.net",
       "img-src 'self' https: data:",
       "connect-src 'self' https: http:",
