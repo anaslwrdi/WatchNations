@@ -27,7 +27,7 @@ const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
 const SEO_LASTMOD = '2026-06-24';
-const SEO_ROUTES = new Set(['/about', '/faq', '/privacy-policy', '/feedback', '/countries']);
+const SEO_ROUTES = new Set(['/about', '/faq', '/privacy', '/privacy-policy', '/feedback', '/countries']);
 const SEO_CATEGORIES = [
   ['all', 'All Channels', 'free live TV channels from all countries'],
   ['top-news', 'Top News', 'top live news channels from around the world'],
@@ -65,10 +65,10 @@ const SEO_KEYWORDS = [
   "free live tv no email required",
   "random tv channel discovery",
   "watch tv online free without registration",
-  "????? ????? ?? ????? ???? ??????",
-  "??????? ???? ??????? ?????",
-  "????? ???? ?? ????? ?????",
-  "?????? ????? ?????? ???????",
+  "قنوات عربية بث مباشر بدون اشتراك",
+  "تلفزيون عربي اونلاين مجاني",
+  "راديو عربي بث مباشر مجاني",
+  "مشاهدة قنوات عالمية اونلاين",
   "regarder tv en direct gratuit sans inscription",
   "tv en direct monde entier",
   "ver tv online gratis sin registrarse",
@@ -76,7 +76,7 @@ const SEO_KEYWORDS = [
   "world cup 2026 live stream free",
   "olympics 2026 live streaming free",
   "champions league live stream free",
-  "???? ???? ??????? ?? ?????",
+  "دوري روشن السعودي بث مباشر",
   "watch global tv online free",
   "watch local tv online free",
   "free live tv no subscription",
@@ -293,21 +293,21 @@ const server = http.createServer((request, response) => {
     if (request.method === 'GET' && url.pathname === '/api/radio/stations') {
       handleRadioStations(url)
         .then((result) => sendJson(response, 200, result))
-        .catch(() => sendJson(response, 502, { stations: [], error: 'Radio service unavailable' }));
+        .catch(() => sendJson(response, 200, { stations: [], error: 'Radio service unavailable' }));
       return;
     }
 
     if (request.method === 'GET' && url.pathname === '/api/radio/click') {
       handleRadioClick(url)
         .then((result) => sendJson(response, 200, result))
-        .catch(() => sendJson(response, 502, { url: '', error: 'Radio click unavailable' }));
+        .catch(() => sendJson(response, 200, { url: '', error: 'Radio click unavailable' }));
       return;
     }
 
     if (request.method === 'GET' && url.pathname === '/api/tv/category') {
       handleTvCategory(url)
         .then((result) => sendJson(response, 200, result))
-        .catch(() => sendJson(response, 502, { channels: [], error: 'TV category unavailable' }));
+        .catch(() => sendJson(response, 200, { channels: [], error: 'TV category unavailable' }));
       return;
     }
 
@@ -498,7 +498,7 @@ function renderSeoRoute(pathname) {
     });
   }
 
-  if (pathname === '/privacy-policy') {
+  if (pathname === '/privacy' || pathname === '/privacy-policy') {
     return seoPage({
       path: pathname,
       title: 'Privacy Policy - WatchNations',
@@ -542,7 +542,7 @@ function renderSeoRoute(pathname) {
     body: [
       'WatchNations is a global TV channel aggregator for people who want to watch global TV online free, watch local TV online free, browse a world TV channel list, and discover international TV channels free.',
       'Use interactive 3D globe TV channels, free live TV no subscription, TV streaming no signup, online television, world TV channels streaming, news live, sports streaming, radio stations worldwide, and electronic newspapers by country from one free app.',
-      'WatchNations also supports sports discovery keywords such as world cup 2026 live stream free, olympics 2026 live streaming free, champions league live stream free, and ???? ???? ??????? ?? ?????.',
+      'WatchNations also supports sports discovery keywords such as world cup 2026 live stream free, olympics 2026 live streaming free, champions league live stream free, and دوري روشن السعودي بث مباشر.',
       'French viewers can use WatchNations to regarder tv en direct gratuit and explore tv en direct monde entier.',
       'Arabic users can explore مشاهدة قنوات عربية بث مباشر مجانا, قنوات عربية بث مباشر بدون اشتراك, قنوات سعودية بث مباشر, قنوات مصرية بث مباشر مجاني, and قنوات اماراتية اونلاين.'
     ]
@@ -711,7 +711,7 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
 }
 
 function buildSitemap() {
-  const staticUrls = ['/', '/countries', '/categories', '/about', '/faq', '/privacy-policy', '/feedback'];
+  const staticUrls = ['/', '/countries', '/categories', '/about', '/faq', '/privacy', '/privacy-policy', '/feedback'];
   const countryUrls = loadSeoCountries().map((country) => `/countries/${country.code.toLowerCase()}`);
   const categoryUrls = SEO_CATEGORIES.map(([id]) => `/categories/${id}`);
   const urls = [...staticUrls, ...categoryUrls, ...countryUrls]
