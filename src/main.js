@@ -201,7 +201,16 @@ const supportedLanguages = [
   ['es', 'Español'],
   ['fr', 'Français'],
   ['ar', 'العربية'],
-  ['it', 'Italiano']
+  ['it', 'Italiano'],
+  ['pt', 'Português'],
+  ['bn', 'বাংলা'],
+  ['tr', 'Türkçe'],
+  ['ja', '日本語'],
+  ['de', 'Deutsch'],
+  ['nl', 'Nederlands'],
+  ['sv', 'Svenska'],
+  ['no', 'Norsk'],
+  ['zh', '中文']
 ];
 
 const translations = {
@@ -603,6 +612,270 @@ const translations = {
   }
 };
 
+function mergeTranslation(base, overrides) {
+  return {
+    ...base,
+    ...overrides,
+    category: {
+      ...base.category,
+      ...(overrides.category || {})
+    }
+  };
+}
+
+const extraLanguageOverrides = {
+  pt: {
+    openMenu: 'Abrir menu', closeMenu: 'Fechar menu', focusGlobe: 'Focar globo', randomCountry: 'País aleatório',
+    search: 'Pesquisar', tv: 'TV', radio: 'Rádio', newspapers: 'Jornais digitais', globeZoomControls: 'Controles de zoom do globo',
+    zoomIn: 'Aproximar', zoomOut: 'Afastar', resetZoom: 'Redefinir zoom', clickCountry: 'Clique em um país',
+    ready: 'Pronto', readyDetail: 'Mova o globo até um país entrar no círculo vermelho', fastMode: 'Modo rápido',
+    chooseFromGlobe: 'Escolha no globo', heroHint: 'Mova o globo, coloque um país no círculo vermelho e clique.',
+    chooseCountry: 'Escolha um país', selectCountry: 'Selecionar país', changeCountry: 'Alterar país',
+    searchCountry: 'Pesquisar país', loadingCountries: 'Carregando países...', selectChannel: 'Selecionar canal',
+    selectRadio: 'Selecionar rádio', pip: 'Imagem em imagem', close: 'Fechar', freeChannels: 'Canais grátis',
+    freeRadio: 'Rádio grátis', smartReady: 'Filtro inteligente pronto', searchChannels: 'Pesquisar canais ou categoria',
+    searchRadio: 'Pesquisar rádios, idioma ou tag', explore: 'Explorar', favorites: 'Favoritos',
+    favoriteChannels: 'Canais favoritos', favoriteRadio: 'Rádios favoritas', about: 'Sobre', faq: 'FAQ',
+    privacy: 'Política de privacidade', feedback: 'Feedback', allChannels: 'Todos os canais',
+    loadingGlobe: 'Carregando globo', globeError: 'Não foi possível carregar o globo',
+    channelsWillAppear: 'Os canais aparecerão aqui depois que você escolher um país no globo.',
+    radioWillAppear: 'As rádios aparecerão aqui depois que você escolher um país no globo.',
+    clickCountryChannels: 'Clique em um país no globo para carregar canais',
+    clickCountryRadio: 'Clique em um país no globo para carregar rádios',
+    chooseCountryRadioFirst: 'Escolha primeiro um país e depois filtre as rádios',
+    chooseCountryRadioFirstBody: 'Escolha primeiro um país para navegar por rádios por categoria.',
+    noFavorites: 'Ainda não há favoritos. Pressione a estrela em qualquer canal para salvar aqui.',
+    noMatch: 'Nenhum {label} corresponde ao filtro atual.', removeFavorite: 'Remover favorito',
+    addFavorite: 'Adicionar favorito', play: 'Reproduzir', showMore: 'Mostrar mais {count} de {remaining}',
+    noChannelsAvailable: 'Nenhum canal disponível para o filtro atual.', noRadioAvailable: 'Nenhuma rádio disponível para o filtro atual.',
+    loadingChannelsAll: 'Carregando canais de todos os países', loadingCategoryAll: 'Carregando canais {label} de todos os países',
+    couldNotLoadChannels: 'Não foi possível carregar os canais agora', channelsCouldNotLoad: 'Os canais não puderam ser carregados agora.',
+    couldNotLoadGlobal: 'Não foi possível carregar canais globais agora', globalCouldNotLoad: 'Os canais globais não puderam ser carregados agora.',
+    loadingMediaForCountry: 'Carregando {label} para este país', selectedFromGlobe: 'Selecionado no globo',
+    mediaAvailable: '{count} {label} disponíveis', noMediaFound: 'Nenhum {label} encontrado para este país',
+    noMediaFoundDetail: 'Nenhum {label} gratuito reproduzível foi encontrado para este país agora.',
+    tvActive: 'Modo TV ativo.', radioActive: 'Modo rádio ativo.', newspapersReady: 'Jornais digitais prontos.',
+    countryUnavailable: 'Este país ainda não está disponível.', countryLoading: 'Os dados do país ainda estão carregando.',
+    clickDirectlyCountry: 'Clique diretamente em um país.', moveCountryCircle: 'Mova um país para dentro do círculo',
+    moveGlobe: 'Mova o globo', placeCountryCircle: 'Coloque um país dentro do círculo vermelho e clique',
+    clickGlobeLoadChannels: 'Clique no globo para carregar canais', clickToLoadChannels: 'Clique para carregar canais',
+    zoom: 'Zoom {percent}%', addedFavorite: 'Adicionado aos favoritos.', removedFavorite: 'Removido dos favoritos.',
+    favoritesFull: 'O armazenamento de favoritos está cheio.', unsafeChannel: 'Este link de canal não é seguro.',
+    unsafeStream: 'Este URL de stream não é seguro.', loadingLiveStream: 'Carregando transmissão ao vivo...',
+    pressPlayStream: 'Pressione play para iniciar este stream.', tryingAlternateStream: 'Tentando outro stream para este canal...',
+    playerError: 'O player de vídeo não carregou. Abrindo em uma nova guia.', loadingRadio: 'Carregando {title}...',
+    pressPlayRadio: 'Pressione play para iniciar esta rádio.', pipTvOnly: 'Imagem em imagem está disponível para streams de TV.',
+    pipUnsupported: 'Seu navegador não suporta imagem em imagem.', startVideoFirst: 'Inicie o vídeo primeiro e tente PiP.',
+    globalTvOnly: 'TV global está disponível no modo TV.', loadedStreams: '{count} streams reproduzíveis carregados',
+    streamsLoaded: '{count} streams reproduzíveis carregados', globalIndexError: 'Não foi possível carregar o índice global de canais',
+    globalIndexErrorBody: 'O índice global de canais não pode ser carregado agora.',
+    developerArea: 'Área do desenvolvedor', developerTitle: 'Desenvolvedor WatchNations',
+    accessCode: 'Código de acesso', enterCode: 'Digite o código', openDeveloper: 'Abrir página do desenvolvedor',
+    realVisitors: 'Visitantes reais', totalVisits: 'Total de visitas', lastVisit: 'Última visita: {date}',
+    currentCode: 'Código atual', newCode: 'Novo código', changeCode: 'Alterar código',
+    checkingCode: 'Verificando código...', developerOpen: 'Página do desenvolvedor aberta.',
+    wrongCode: 'Código incorreto.', savingCode: 'Salvando novo código...', codeChanged: 'Código alterado com sucesso.',
+    refreshStatsError: 'Não foi possível atualizar as estatísticas.', requestFailed: 'Solicitação falhou.',
+    category: {
+      all: 'Todos os canais', 'top-news': 'Principais notícias', news: 'Notícias', music: 'Música', sports: 'Esportes',
+      auto: 'Automóveis', animation: 'Animação', business: 'Negócios', classic: 'Clássicos', comedy: 'Comédia',
+      cooking: 'Culinária', culture: 'Cultura', documentary: 'Documentários', education: 'Educação',
+      entertainment: 'Entretenimento', family: 'Família', general: 'Geral', kids: 'Crianças',
+      legislative: 'Legislativo', lifestyle: 'Estilo de vida', movies: 'Filmes', outdoor: 'Ar livre',
+      relax: 'Relaxamento', religious: 'Religião', series: 'Séries', science: 'Ciência', shop: 'Compras',
+      travel: 'Viagem', weather: 'Clima', favorites: 'Favoritos'
+    }
+  },
+  bn: {
+    openMenu: 'মেনু খুলুন', closeMenu: 'মেনু বন্ধ করুন', focusGlobe: 'গ্লোব ফোকাস করুন', randomCountry: 'এলোমেলো দেশ',
+    search: 'অনুসন্ধান', tv: 'টিভি', radio: 'রেডিও', newspapers: 'ই-পত্রিকা', globeZoomControls: 'গ্লোব জুম নিয়ন্ত্রণ',
+    zoomIn: 'জুম ইন', zoomOut: 'জুম আউট', resetZoom: 'জুম রিসেট', clickCountry: 'একটি দেশে ক্লিক করুন',
+    ready: 'প্রস্তুত', readyDetail: 'লাল বৃত্তে একটি দেশ আসা পর্যন্ত গ্লোব ঘোরান', fastMode: 'দ্রুত মোড',
+    chooseFromGlobe: 'গ্লোব থেকে বেছে নিন', heroHint: 'গ্লোব ঘোরান, দেশটি লাল বৃত্তে রাখুন, তারপর ক্লিক করুন.',
+    chooseCountry: 'দেশ বেছে নিন', selectCountry: 'দেশ নির্বাচন করুন', changeCountry: 'দেশ পরিবর্তন করুন',
+    searchCountry: 'দেশ খুঁজুন', loadingCountries: 'দেশ লোড হচ্ছে...', selectChannel: 'চ্যানেল নির্বাচন করুন',
+    selectRadio: 'রেডিও নির্বাচন করুন', pip: 'পিকচার ইন পিকচার', close: 'বন্ধ করুন', freeChannels: 'ফ্রি চ্যানেল',
+    freeRadio: 'ফ্রি রেডিও', smartReady: 'স্মার্ট ফিল্টার প্রস্তুত', searchChannels: 'চ্যানেল বা বিভাগ খুঁজুন',
+    searchRadio: 'রেডিও, ভাষা বা ট্যাগ খুঁজুন', explore: 'এক্সপ্লোর', favorites: 'প্রিয়',
+    favoriteChannels: 'প্রিয় চ্যানেল', favoriteRadio: 'প্রিয় রেডিও', about: 'সম্পর্কে', faq: 'FAQ',
+    privacy: 'গোপনীয়তা নীতি', feedback: 'মতামত', allChannels: 'সব চ্যানেল',
+    loadingGlobe: 'গ্লোব লোড হচ্ছে', globeError: 'গ্লোব লোড করা যায়নি',
+    channelsWillAppear: 'গ্লোব থেকে দেশ বেছে নেওয়ার পর চ্যানেল এখানে দেখা যাবে.',
+    radioWillAppear: 'গ্লোব থেকে দেশ বেছে নেওয়ার পর রেডিও এখানে দেখা যাবে.',
+    clickCountryChannels: 'চ্যানেল লোড করতে গ্লোবের একটি দেশে ক্লিক করুন',
+    clickCountryRadio: 'রেডিও লোড করতে গ্লোবের একটি দেশে ক্লিক করুন',
+    chooseCountryRadioFirst: 'আগে দেশ বেছে নিন, তারপর রেডিও ফিল্টার করুন',
+    chooseCountryRadioFirstBody: 'বিভাগ অনুযায়ী রেডিও দেখতে আগে একটি দেশ বেছে নিন.',
+    noFavorites: 'এখনও কোনো প্রিয় নেই. কোনো চ্যানেলে তারকা চাপলে এখানে সেভ হবে.',
+    noMatch: 'বর্তমান ফিল্টারের সাথে কোনো {label} মেলেনি.', removeFavorite: 'প্রিয় থেকে সরান',
+    addFavorite: 'প্রিয়তে যোগ করুন', play: 'চালান', showMore: '{remaining} এর মধ্যে আরও {count} দেখান',
+    noChannelsAvailable: 'বর্তমান ফিল্টারে কোনো চ্যানেল নেই.', noRadioAvailable: 'বর্তমান ফিল্টারে কোনো রেডিও নেই.',
+    loadingChannelsAll: 'সব দেশ থেকে চ্যানেল লোড হচ্ছে', loadingCategoryAll: 'সব দেশ থেকে {label} চ্যানেল লোড হচ্ছে',
+    couldNotLoadChannels: 'এখন চ্যানেল লোড করা যায়নি', channelsCouldNotLoad: 'চ্যানেল এখন লোড করা যায়নি.',
+    couldNotLoadGlobal: 'এখন বৈশ্বিক চ্যানেল লোড করা যায়নি', globalCouldNotLoad: 'বৈশ্বিক চ্যানেল এখন লোড করা যায়নি.',
+    loadingMediaForCountry: 'এই দেশের জন্য {label} লোড হচ্ছে', selectedFromGlobe: 'গ্লোব থেকে নির্বাচিত',
+    mediaAvailable: '{count}টি {label} উপলব্ধ', noMediaFound: 'এই দেশের জন্য কোনো {label} পাওয়া যায়নি',
+    noMediaFoundDetail: 'এই দেশের জন্য এখন চালানো যায় এমন ফ্রি {label} পাওয়া যায়নি.',
+    tvActive: 'টিভি মোড সক্রিয়.', radioActive: 'রেডিও মোড সক্রিয়.', newspapersReady: 'ই-পত্রিকা প্রস্তুত.',
+    countryUnavailable: 'এই দেশ এখনও উপলব্ধ নয়.', countryLoading: 'দেশের ডেটা এখনও লোড হচ্ছে.',
+    moveGlobe: 'গ্লোব ঘোরান', placeCountryCircle: 'দেশটি লাল বৃত্তে রাখুন এবং ক্লিক করুন',
+    clickGlobeLoadChannels: 'চ্যানেল লোড করতে গ্লোবে ক্লিক করুন', clickToLoadChannels: 'চ্যানেল লোড করতে ক্লিক করুন',
+    category: {
+      all: 'সব চ্যানেল', 'top-news': 'শীর্ষ খবর', news: 'খবর', music: 'সঙ্গীত', sports: 'খেলা',
+      auto: 'অটো', animation: 'অ্যানিমেশন', business: 'ব্যবসা', classic: 'ক্লাসিক', comedy: 'কমেডি',
+      cooking: 'রান্না', culture: 'সংস্কৃতি', documentary: 'ডকুমেন্টারি', education: 'শিক্ষা',
+      entertainment: 'বিনোদন', family: 'পরিবার', general: 'সাধারণ', kids: 'শিশু',
+      legislative: 'আইনসভা', lifestyle: 'লাইফস্টাইল', movies: 'সিনেমা', outdoor: 'আউটডোর',
+      relax: 'রিল্যাক্স', religious: 'ধর্মীয়', series: 'সিরিজ', science: 'বিজ্ঞান', shop: 'শপিং',
+      travel: 'ভ্রমণ', weather: 'আবহাওয়া', favorites: 'প্রিয়'
+    }
+  },
+  tr: {
+    search: 'Ara', tv: 'TV', radio: 'Radyo', newspapers: 'E-Gazeteler', chooseCountry: 'Ülke seç',
+    selectCountry: 'Ülke seç', searchCountry: 'Ülke ara', selectChannel: 'Kanal seç', selectRadio: 'Radyo seç',
+    freeChannels: 'Ücretsiz kanallar', freeRadio: 'Ücretsiz radyo', searchChannels: 'Kanal veya kategori ara',
+    searchRadio: 'Radyo, dil veya etiket ara', explore: 'Keşfet', favorites: 'Favoriler',
+    about: 'Hakkında', privacy: 'Gizlilik Politikası', feedback: 'Geri bildirim', allChannels: 'Tüm kanallar',
+    channelsWillAppear: 'Globe üzerinden bir ülke seçtikten sonra kanallar burada görünecek.',
+    radioWillAppear: 'Globe üzerinden bir ülke seçtikten sonra radyolar burada görünecek.',
+    mediaAvailable: '{count} {label} mevcut', noMediaFound: 'Bu ülke için {label} bulunamadı',
+    tvActive: 'TV modu aktif.', radioActive: 'Radyo modu aktif.', play: 'Oynat', close: 'Kapat',
+    category: {
+      all: 'Tüm kanallar', 'top-news': 'Öne çıkan haberler', news: 'Haberler', music: 'Müzik', sports: 'Spor',
+      auto: 'Otomobil', animation: 'Animasyon', business: 'İş', classic: 'Klasik', comedy: 'Komedi',
+      cooking: 'Yemek', culture: 'Kültür', documentary: 'Belgesel', education: 'Eğitim',
+      entertainment: 'Eğlence', family: 'Aile', general: 'Genel', kids: 'Çocuk',
+      legislative: 'Meclis', lifestyle: 'Yaşam', movies: 'Filmler', outdoor: 'Açık hava',
+      relax: 'Rahatlama', religious: 'Dini', series: 'Diziler', science: 'Bilim', shop: 'Alışveriş',
+      travel: 'Seyahat', weather: 'Hava durumu', favorites: 'Favoriler'
+    }
+  },
+  ja: {
+    search: '検索', tv: 'テレビ', radio: 'ラジオ', newspapers: '電子新聞', chooseCountry: '国を選択',
+    selectCountry: '国を選択', searchCountry: '国を検索', selectChannel: 'チャンネルを選択', selectRadio: 'ラジオを選択',
+    freeChannels: '無料チャンネル', freeRadio: '無料ラジオ', searchChannels: 'チャンネルまたはカテゴリを検索',
+    searchRadio: 'ラジオ、言語、タグを検索', explore: '探索', favorites: 'お気に入り',
+    about: '概要', privacy: 'プライバシーポリシー', feedback: 'フィードバック', allChannels: 'すべてのチャンネル',
+    channelsWillAppear: '地球儀から国を選ぶと、ここにチャンネルが表示されます。',
+    radioWillAppear: '地球儀から国を選ぶと、ここにラジオが表示されます。',
+    mediaAvailable: '{count}件の{label}が利用可能', noMediaFound: 'この国の{label}は見つかりません',
+    tvActive: 'テレビモードが有効です。', radioActive: 'ラジオモードが有効です。', play: '再生', close: '閉じる',
+    category: {
+      all: 'すべてのチャンネル', 'top-news': 'トップニュース', news: 'ニュース', music: '音楽', sports: 'スポーツ',
+      auto: '自動車', animation: 'アニメーション', business: 'ビジネス', classic: 'クラシック', comedy: 'コメディ',
+      cooking: '料理', culture: '文化', documentary: 'ドキュメンタリー', education: '教育',
+      entertainment: 'エンタメ', family: 'ファミリー', general: '一般', kids: '子ども',
+      legislative: '議会', lifestyle: 'ライフスタイル', movies: '映画', outdoor: 'アウトドア',
+      relax: 'リラックス', religious: '宗教', series: 'シリーズ', science: '科学', shop: 'ショッピング',
+      travel: '旅行', weather: '天気', favorites: 'お気に入り'
+    }
+  },
+  de: {
+    search: 'Suchen', tv: 'TV', radio: 'Radio', newspapers: 'E-Zeitungen', chooseCountry: 'Land wählen',
+    selectCountry: 'Land auswählen', searchCountry: 'Land suchen', selectChannel: 'Kanal auswählen', selectRadio: 'Radio auswählen',
+    freeChannels: 'Kostenlose Kanäle', freeRadio: 'Kostenloses Radio', searchChannels: 'Kanäle oder Kategorie suchen',
+    searchRadio: 'Sender, Sprache oder Tag suchen', explore: 'Entdecken', favorites: 'Favoriten',
+    about: 'Über uns', privacy: 'Datenschutz', feedback: 'Feedback', allChannels: 'Alle Kanäle',
+    channelsWillAppear: 'Kanäle erscheinen hier, nachdem Sie ein Land auf dem Globus ausgewählt haben.',
+    radioWillAppear: 'Radios erscheinen hier, nachdem Sie ein Land auf dem Globus ausgewählt haben.',
+    mediaAvailable: '{count} {label} verfügbar', noMediaFound: 'Keine {label} für dieses Land gefunden',
+    tvActive: 'TV-Modus aktiv.', radioActive: 'Radio-Modus aktiv.', play: 'Abspielen', close: 'Schließen',
+    category: {
+      all: 'Alle Kanäle', 'top-news': 'Top-Nachrichten', news: 'Nachrichten', music: 'Musik', sports: 'Sport',
+      auto: 'Auto', animation: 'Animation', business: 'Wirtschaft', classic: 'Klassiker', comedy: 'Comedy',
+      cooking: 'Kochen', culture: 'Kultur', documentary: 'Dokumentation', education: 'Bildung',
+      entertainment: 'Unterhaltung', family: 'Familie', general: 'Allgemein', kids: 'Kinder',
+      legislative: 'Parlament', lifestyle: 'Lifestyle', movies: 'Filme', outdoor: 'Outdoor',
+      relax: 'Entspannung', religious: 'Religion', series: 'Serien', science: 'Wissenschaft', shop: 'Shopping',
+      travel: 'Reisen', weather: 'Wetter', favorites: 'Favoriten'
+    }
+  },
+  nl: {
+    search: 'Zoeken', tv: 'TV', radio: 'Radio', newspapers: 'E-kranten', chooseCountry: 'Kies een land',
+    selectCountry: 'Selecteer land', searchCountry: 'Land zoeken', selectChannel: 'Kanaal selecteren', selectRadio: 'Radio selecteren',
+    freeChannels: 'Gratis kanalen', freeRadio: 'Gratis radio', searchChannels: 'Kanalen of categorie zoeken',
+    searchRadio: 'Stations, taal of tag zoeken', explore: 'Ontdekken', favorites: 'Favorieten',
+    about: 'Over', privacy: 'Privacybeleid', feedback: 'Feedback', allChannels: 'Alle kanalen',
+    channelsWillAppear: 'Kanalen verschijnen hier nadat je een land op de globe kiest.',
+    radioWillAppear: 'Radiozenders verschijnen hier nadat je een land op de globe kiest.',
+    mediaAvailable: '{count} {label} beschikbaar', noMediaFound: 'Geen {label} gevonden voor dit land',
+    tvActive: 'TV-modus actief.', radioActive: 'Radiomodus actief.', play: 'Afspelen', close: 'Sluiten',
+    category: {
+      all: 'Alle kanalen', 'top-news': 'Belangrijk nieuws', news: 'Nieuws', music: 'Muziek', sports: 'Sport',
+      auto: 'Auto', animation: 'Animatie', business: 'Zakelijk', classic: 'Klassiek', comedy: 'Comedy',
+      cooking: 'Koken', culture: 'Cultuur', documentary: 'Documentaire', education: 'Onderwijs',
+      entertainment: 'Entertainment', family: 'Familie', general: 'Algemeen', kids: 'Kinderen',
+      legislative: 'Parlementair', lifestyle: 'Lifestyle', movies: 'Films', outdoor: 'Outdoor',
+      relax: 'Relax', religious: 'Religie', series: 'Series', science: 'Wetenschap', shop: 'Winkelen',
+      travel: 'Reizen', weather: 'Weer', favorites: 'Favorieten'
+    }
+  },
+  sv: {
+    search: 'Sök', tv: 'TV', radio: 'Radio', newspapers: 'E-tidningar', chooseCountry: 'Välj land',
+    selectCountry: 'Välj ett land', searchCountry: 'Sök land', selectChannel: 'Välj kanal', selectRadio: 'Välj radio',
+    freeChannels: 'Gratis kanaler', freeRadio: 'Gratis radio', searchChannels: 'Sök kanaler eller kategori',
+    searchRadio: 'Sök stationer, språk eller tagg', explore: 'Utforska', favorites: 'Favoriter',
+    about: 'Om', privacy: 'Integritetspolicy', feedback: 'Feedback', allChannels: 'Alla kanaler',
+    channelsWillAppear: 'Kanaler visas här efter att du valt ett land på globen.',
+    radioWillAppear: 'Radiostationer visas här efter att du valt ett land på globen.',
+    mediaAvailable: '{count} {label} tillgängliga', noMediaFound: 'Inga {label} hittades för detta land',
+    tvActive: 'TV-läge är aktivt.', radioActive: 'Radioläge är aktivt.', play: 'Spela', close: 'Stäng',
+    category: {
+      all: 'Alla kanaler', 'top-news': 'Toppnyheter', news: 'Nyheter', music: 'Musik', sports: 'Sport',
+      auto: 'Auto', animation: 'Animation', business: 'Näringsliv', classic: 'Klassiskt', comedy: 'Komedi',
+      cooking: 'Matlagning', culture: 'Kultur', documentary: 'Dokumentär', education: 'Utbildning',
+      entertainment: 'Underhållning', family: 'Familj', general: 'Allmänt', kids: 'Barn',
+      legislative: 'Parlament', lifestyle: 'Livsstil', movies: 'Filmer', outdoor: 'Friluftsliv',
+      relax: 'Avkoppling', religious: 'Religion', series: 'Serier', science: 'Vetenskap', shop: 'Shopping',
+      travel: 'Resor', weather: 'Väder', favorites: 'Favoriter'
+    }
+  },
+  no: {
+    search: 'Søk', tv: 'TV', radio: 'Radio', newspapers: 'E-aviser', chooseCountry: 'Velg land',
+    selectCountry: 'Velg et land', searchCountry: 'Søk land', selectChannel: 'Velg kanal', selectRadio: 'Velg radio',
+    freeChannels: 'Gratis kanaler', freeRadio: 'Gratis radio', searchChannels: 'Søk kanaler eller kategori',
+    searchRadio: 'Søk stasjoner, språk eller tagg', explore: 'Utforsk', favorites: 'Favoritter',
+    about: 'Om', privacy: 'Personvern', feedback: 'Tilbakemelding', allChannels: 'Alle kanaler',
+    channelsWillAppear: 'Kanaler vises her etter at du velger et land på globusen.',
+    radioWillAppear: 'Radiostasjoner vises her etter at du velger et land på globusen.',
+    mediaAvailable: '{count} {label} tilgjengelig', noMediaFound: 'Ingen {label} funnet for dette landet',
+    tvActive: 'TV-modus er aktiv.', radioActive: 'Radiomodus er aktiv.', play: 'Spill av', close: 'Lukk',
+    category: {
+      all: 'Alle kanaler', 'top-news': 'Toppnyheter', news: 'Nyheter', music: 'Musikk', sports: 'Sport',
+      auto: 'Auto', animation: 'Animasjon', business: 'Næring', classic: 'Klassisk', comedy: 'Komedie',
+      cooking: 'Matlaging', culture: 'Kultur', documentary: 'Dokumentar', education: 'Utdanning',
+      entertainment: 'Underholdning', family: 'Familie', general: 'Generelt', kids: 'Barn',
+      legislative: 'Parlament', lifestyle: 'Livsstil', movies: 'Filmer', outdoor: 'Friluft',
+      relax: 'Avslapning', religious: 'Religion', series: 'Serier', science: 'Vitenskap', shop: 'Shopping',
+      travel: 'Reise', weather: 'Vær', favorites: 'Favoritter'
+    }
+  },
+  zh: {
+    search: '搜索', tv: '电视', radio: '广播', newspapers: '电子报纸', chooseCountry: '选择国家',
+    selectCountry: '选择国家', searchCountry: '搜索国家', selectChannel: '选择频道', selectRadio: '选择电台',
+    freeChannels: '免费频道', freeRadio: '免费广播', searchChannels: '搜索频道或分类',
+    searchRadio: '搜索电台、语言或标签', explore: '探索', favorites: '收藏',
+    about: '关于', privacy: '隐私政策', feedback: '反馈', allChannels: '所有频道',
+    channelsWillAppear: '从地球仪选择国家后，频道会显示在这里。',
+    radioWillAppear: '从地球仪选择国家后，广播会显示在这里。',
+    mediaAvailable: '可用 {label}：{count}', noMediaFound: '未找到该国家的{label}',
+    tvActive: '电视模式已启用。', radioActive: '广播模式已启用。', play: '播放', close: '关闭',
+    category: {
+      all: '所有频道', 'top-news': '头条新闻', news: '新闻', music: '音乐', sports: '体育',
+      auto: '汽车', animation: '动画', business: '商业', classic: '经典', comedy: '喜剧',
+      cooking: '烹饪', culture: '文化', documentary: '纪录片', education: '教育',
+      entertainment: '娱乐', family: '家庭', general: '综合', kids: '儿童',
+      legislative: '议会', lifestyle: '生活方式', movies: '电影', outdoor: '户外',
+      relax: '放松', religious: '宗教', series: '剧集', science: '科学', shop: '购物',
+      travel: '旅行', weather: '天气', favorites: '收藏'
+    }
+  }
+};
+
+Object.entries(extraLanguageOverrides).forEach(([language, overrides]) => {
+  translations[language] = mergeTranslation(translations.en, overrides);
+});
+
 const savedLanguage = localStorage.getItem('watchnations:language');
 let currentLanguage = translations[savedLanguage] ? savedLanguage : 'en';
 const newspaperText = {
@@ -648,6 +921,85 @@ const newspaperText = {
   }
 };
 
+const extraNewspaperText = {
+  pt: {
+    title: 'Jornais digitais', select: 'Selecionar país', search: 'Pesquisar jornais, fonte ou categoria',
+    hint: 'Escolha um país para navegar por jornais digitais e fontes oficiais.',
+    categories: 'Categorias de jornais', all: 'Todos', politics: 'Política', economy: 'Economia', society: 'Sociedade', sports: 'Esportes', technology: 'Tecnologia e cripto',
+    loading: 'Carregando jornais digitais', loaded: '{count} fontes disponíveis', empty: 'Nenhum jornal corresponde ao filtro atual.',
+    read: 'Ler aqui', open: 'Abrir site', official: 'Oficial', source: 'Fonte', readerTitle: 'Leitor de jornal',
+    frameNote: 'Alguns sites bloqueiam a leitura incorporada. Use Abrir site se a página não aparecer.'
+  },
+  bn: {
+    title: 'ই-পত্রিকা', select: 'দেশ নির্বাচন করুন', search: 'পত্রিকা, উৎস বা বিভাগ খুঁজুন',
+    hint: 'ডিজিটাল পত্রিকা ও সরকারি উৎস দেখতে একটি দেশ বেছে নিন.',
+    categories: 'পত্রিকার বিভাগ', all: 'সব', politics: 'রাজনীতি', economy: 'অর্থনীতি', society: 'সমাজ', sports: 'খেলা', technology: 'প্রযুক্তি ও ক্রিপ্টো',
+    loading: 'ই-পত্রিকা লোড হচ্ছে', loaded: '{count}টি উৎস উপলব্ধ', empty: 'বর্তমান ফিল্টারে কোনো পত্রিকা নেই.',
+    read: 'এখানে পড়ুন', open: 'ওয়েবসাইট খুলুন', official: 'সরকারি', source: 'উৎস', readerTitle: 'পত্রিকা রিডার',
+    frameNote: 'কিছু সাইট এমবেডেড পড়া ব্লক করে. পৃষ্ঠা না দেখালে ওয়েবসাইট খুলুন ব্যবহার করুন.'
+  },
+  tr: {
+    title: 'E-Gazeteler', select: 'Ülke seç', search: 'Gazete, kaynak veya kategori ara',
+    hint: 'Dijital gazeteleri ve resmi kaynakları gezmek için bir ülke seçin.',
+    categories: 'Gazete kategorileri', all: 'Tümü', politics: 'Politika', economy: 'Ekonomi', society: 'Toplum', sports: 'Spor', technology: 'Teknoloji ve kripto',
+    loading: 'E-gazeteler yükleniyor', loaded: '{count} kaynak mevcut', empty: 'Geçerli filtreyle eşleşen gazete yok.',
+    read: 'Burada oku', open: 'Siteyi aç', official: 'Resmi', source: 'Kaynak', readerTitle: 'Gazete okuyucu',
+    frameNote: 'Bazı siteler gömülü okumayı engeller. Sayfa görünmezse Siteyi aç kullanın.'
+  },
+  ja: {
+    title: '電子新聞', select: '国を選択', search: '新聞、提供元、カテゴリを検索',
+    hint: '国を選んで電子新聞と公式ソースを閲覧します。',
+    categories: '新聞カテゴリ', all: 'すべて', politics: '政治', economy: '経済', society: '社会', sports: 'スポーツ', technology: 'テクノロジーと暗号資産',
+    loading: '電子新聞を読み込み中', loaded: '{count}件のソースが利用可能', empty: '現在のフィルターに一致する新聞はありません。',
+    read: 'ここで読む', open: 'サイトを開く', official: '公式', source: 'ソース', readerTitle: '新聞リーダー',
+    frameNote: '一部のサイトは埋め込み表示をブロックします。表示されない場合はサイトを開いてください。'
+  },
+  de: {
+    title: 'E-Zeitungen', select: 'Land auswählen', search: 'Zeitungen, Quelle oder Kategorie suchen',
+    hint: 'Wählen Sie ein Land, um digitale Zeitungen und offizielle Quellen zu durchsuchen.',
+    categories: 'Zeitungskategorien', all: 'Alle', politics: 'Politik', economy: 'Wirtschaft', society: 'Gesellschaft', sports: 'Sport', technology: 'Technologie und Krypto',
+    loading: 'E-Zeitungen werden geladen', loaded: '{count} Quellen verfügbar', empty: 'Keine Zeitung passt zum aktuellen Filter.',
+    read: 'Hier lesen', open: 'Website öffnen', official: 'Offiziell', source: 'Quelle', readerTitle: 'Zeitungsleser',
+    frameNote: 'Einige Websites blockieren die eingebettete Anzeige. Nutzen Sie Website öffnen, falls die Seite nicht erscheint.'
+  },
+  nl: {
+    title: 'E-kranten', select: 'Land selecteren', search: 'Kranten, bron of categorie zoeken',
+    hint: 'Kies een land om digitale kranten en officiële bronnen te bekijken.',
+    categories: 'Krantencategorieën', all: 'Alles', politics: 'Politiek', economy: 'Economie', society: 'Maatschappij', sports: 'Sport', technology: 'Technologie en crypto',
+    loading: 'E-kranten laden', loaded: '{count} bronnen beschikbaar', empty: 'Geen kranten passen bij het huidige filter.',
+    read: 'Hier lezen', open: 'Website openen', official: 'Officieel', source: 'Bron', readerTitle: 'Krantenlezer',
+    frameNote: 'Sommige websites blokkeren ingebed lezen. Gebruik Website openen als de pagina niet verschijnt.'
+  },
+  sv: {
+    title: 'E-tidningar', select: 'Välj land', search: 'Sök tidningar, källa eller kategori',
+    hint: 'Välj ett land för att läsa digitala tidningar och officiella källor.',
+    categories: 'Tidningskategorier', all: 'Alla', politics: 'Politik', economy: 'Ekonomi', society: 'Samhälle', sports: 'Sport', technology: 'Teknik och krypto',
+    loading: 'Laddar e-tidningar', loaded: '{count} källor tillgängliga', empty: 'Ingen tidning matchar aktuellt filter.',
+    read: 'Läs här', open: 'Öppna webbplats', official: 'Officiell', source: 'Källa', readerTitle: 'Tidningsläsare',
+    frameNote: 'Vissa webbplatser blockerar inbäddad läsning. Använd Öppna webbplats om sidan inte visas.'
+  },
+  no: {
+    title: 'E-aviser', select: 'Velg land', search: 'Søk aviser, kilde eller kategori',
+    hint: 'Velg et land for å lese digitale aviser og offisielle kilder.',
+    categories: 'Aviskategorier', all: 'Alle', politics: 'Politikk', economy: 'Økonomi', society: 'Samfunn', sports: 'Sport', technology: 'Teknologi og krypto',
+    loading: 'Laster e-aviser', loaded: '{count} kilder tilgjengelig', empty: 'Ingen aviser passer til gjeldende filter.',
+    read: 'Les her', open: 'Åpne nettsted', official: 'Offisiell', source: 'Kilde', readerTitle: 'Avisleser',
+    frameNote: 'Noen nettsteder blokkerer innebygd lesing. Bruk Åpne nettsted hvis siden ikke vises.'
+  },
+  zh: {
+    title: '电子报纸', select: '选择国家', search: '搜索报纸、来源或分类',
+    hint: '选择一个国家，浏览电子报纸和官方来源。',
+    categories: '报纸分类', all: '全部', politics: '政治', economy: '经济', society: '社会', sports: '体育', technology: '科技与加密',
+    loading: '正在加载电子报纸', loaded: '可用来源 {count} 个', empty: '没有符合当前筛选的报纸。',
+    read: '在此阅读', open: '打开网站', official: '官方', source: '来源', readerTitle: '报纸阅读器',
+    frameNote: '部分网站会阻止嵌入阅读。如果页面未显示，请使用打开网站。'
+  }
+};
+
+Object.entries(extraNewspaperText).forEach(([language, overrides]) => {
+  newspaperText[language] = { ...newspaperText.en, ...overrides };
+});
+
 const newspaperLocale = {
   en: {
     categoryNames: {
@@ -686,6 +1038,65 @@ const newspaperLocale = {
   }
 };
 
+const extraNewspaperLocale = {
+  pt: {
+    categoryNames: { all: 'todas as fontes', politics: 'política', economy: 'economia', society: 'sociedade', sports: 'esportes', technology: 'tecnologia e cripto' },
+    description: '{name} é uma fonte de {category} de {country}. Abra o site oficial ou leia dentro do WatchNations quando suportado.',
+    sourceMeta: 'Fonte online'
+  },
+  bn: {
+    categoryNames: { all: 'সব উৎস', politics: 'রাজনীতি', economy: 'অর্থনীতি', society: 'সমাজ', sports: 'খেলা', technology: 'প্রযুক্তি ও ক্রিপ্টো' },
+    description: '{name} হলো {country} থেকে {category} উৎস. সমর্থিত হলে অফিসিয়াল সাইট খুলুন বা WatchNations-এর ভিতরে পড়ুন.',
+    sourceMeta: 'অনলাইন উৎস'
+  },
+  tr: {
+    categoryNames: { all: 'tüm kaynaklar', politics: 'politika', economy: 'ekonomi', society: 'toplum', sports: 'spor', technology: 'teknoloji ve kripto' },
+    description: '{name}, {country} ülkesinden bir {category} kaynağıdır. Resmi siteyi açın veya desteklenirse WatchNations içinde okuyun.',
+    sourceMeta: 'Online kaynak'
+  },
+  ja: {
+    categoryNames: { all: 'すべてのソース', politics: '政治', economy: '経済', society: '社会', sports: 'スポーツ', technology: 'テクノロジーと暗号資産' },
+    description: '{name} は {country} の {category} ソースです。公式サイトを開くか、対応している場合は WatchNations 内で読めます。',
+    sourceMeta: 'オンラインソース'
+  },
+  de: {
+    categoryNames: { all: 'alle Quellen', politics: 'Politik', economy: 'Wirtschaft', society: 'Gesellschaft', sports: 'Sport', technology: 'Technologie und Krypto' },
+    description: '{name} ist eine {category}-Quelle aus {country}. Öffnen Sie die offizielle Website oder lesen Sie sie in WatchNations, wenn unterstützt.',
+    sourceMeta: 'Online-Quelle'
+  },
+  nl: {
+    categoryNames: { all: 'alle bronnen', politics: 'politiek', economy: 'economie', society: 'maatschappij', sports: 'sport', technology: 'technologie en crypto' },
+    description: '{name} is een {category}-bron uit {country}. Open de officiële website of lees binnen WatchNations wanneer ondersteund.',
+    sourceMeta: 'Online bron'
+  },
+  sv: {
+    categoryNames: { all: 'alla källor', politics: 'politik', economy: 'ekonomi', society: 'samhälle', sports: 'sport', technology: 'teknik och krypto' },
+    description: '{name} är en {category}-källa från {country}. Öppna den officiella webbplatsen eller läs i WatchNations när det stöds.',
+    sourceMeta: 'Onlinekälla'
+  },
+  no: {
+    categoryNames: { all: 'alle kilder', politics: 'politikk', economy: 'økonomi', society: 'samfunn', sports: 'sport', technology: 'teknologi og krypto' },
+    description: '{name} er en {category}-kilde fra {country}. Åpne det offisielle nettstedet eller les i WatchNations når det støttes.',
+    sourceMeta: 'Nettkilde'
+  },
+  zh: {
+    categoryNames: { all: '所有来源', politics: '政治', economy: '经济', society: '社会', sports: '体育', technology: '科技与加密' },
+    description: '{name} 是来自 {country} 的{category}来源。可打开官方网站，或在支持时于 WatchNations 内阅读。',
+    sourceMeta: '在线来源'
+  }
+};
+
+Object.entries(extraNewspaperLocale).forEach(([language, overrides]) => {
+  newspaperLocale[language] = {
+    ...newspaperLocale.en,
+    ...overrides,
+    categoryNames: {
+      ...newspaperLocale.en.categoryNames,
+      ...(overrides.categoryNames || {})
+    }
+  };
+});
+
 function nt(key, values = {}) {
   const value = newspaperText[currentLanguage]?.[key] || newspaperText.en[key] || key;
   return value.replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '');
@@ -709,7 +1120,16 @@ function mediaTypeLabel(type = appState.mediaMode) {
     es: { tv: 'canales', radio: 'emisoras' },
     fr: { tv: 'chaînes', radio: 'radios' },
     ar: { tv: 'قنوات', radio: 'محطات راديو' },
-    it: { tv: 'canali', radio: 'radio' }
+    it: { tv: 'canali', radio: 'radio' },
+    pt: { tv: 'canais', radio: 'rádios' },
+    bn: { tv: 'চ্যানেল', radio: 'রেডিও স্টেশন' },
+    tr: { tv: 'kanal', radio: 'radyo istasyonu' },
+    ja: { tv: 'チャンネル', radio: 'ラジオ局' },
+    de: { tv: 'Kanäle', radio: 'Radiosender' },
+    nl: { tv: 'kanalen', radio: 'radiostations' },
+    sv: { tv: 'kanaler', radio: 'radiostationer' },
+    no: { tv: 'kanaler', radio: 'radiostasjoner' },
+    zh: { tv: '频道', radio: '广播电台' }
   };
   return labels[currentLanguage]?.[type] || labels.en[type] || labels.en.tv;
 }
