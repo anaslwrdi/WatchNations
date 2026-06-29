@@ -688,9 +688,9 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
     :root{color:#f7f9fb;background:#050609;font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif}
     body{margin:0;background:#050609;color:#f7f9fb;line-height:1.7}
     header,main,footer{max-width:980px;margin:auto;padding:28px}
-    header{display:flex;gap:18px;align-items:center;border-bottom:1px solid rgba(255,255,255,.14)}
-    img{width:72px;height:72px;object-fit:contain}
-    a{color:#ff4a42} .brand{font-weight:900;font-size:28px}.brand span{color:#ff0800}
+    header{display:flex;gap:8px;align-items:center;border-bottom:1px solid rgba(255,255,255,.14)}
+    img{width:82px;height:64px;object-fit:contain;margin-right:-8px}
+    a{color:#ff4a42}.brand{font-weight:900;font-size:34px;line-height:1}.brand span{color:#ff0800;text-shadow:0 0 14px rgba(255,8,0,.28)}
     h1{font-size:clamp(34px,6vw,62px);line-height:1.05;margin:34px 0 18px}
     p{max-width:760px;color:#d7dbe3}.button{display:inline-block;margin-top:10px;padding:12px 18px;border:1px solid #ff0800;border-radius:8px;color:#fff;background:#ff0800;text-decoration:none;font-weight:900}
     nav{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}.country-grid{columns:3 220px;padding-left:20px}.country-grid li{break-inside:avoid;margin:0 0 8px}

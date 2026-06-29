@@ -83,9 +83,9 @@ svg {
 .brand {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
   min-width: 0;
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 900;
   line-height: 1;
 }
@@ -93,9 +93,10 @@ svg {
 .brand-mark {
   display: inline-grid;
   place-items: center;
-  width: 76px;
-  height: 52px;
-  margin-right: -4px;
+  flex: 0 0 auto;
+  width: 86px;
+  height: 58px;
+  margin-right: -7px;
   border-radius: 12px;
   overflow: hidden;
   background: transparent;
@@ -116,15 +117,22 @@ svg {
 }
 
 .brand strong {
+  display: inline-flex;
+  align-items: center;
   overflow: hidden;
   color: #fff;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transform: translateY(1px);
+  transform: translateY(0);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 .brand-watch {
-  color: var(--accent);
+  color: #ff0800;
+  text-shadow: 0 0 14px rgba(255, 8, 0, 0.28);
 }
 
 .top-actions {
@@ -1522,12 +1530,13 @@ svg {
   }
 
   .brand {
-    font-size: 21px;
+    font-size: 23px;
   }
 
   .brand-mark {
-    width: 62px;
-    height: 42px;
+    width: 65px;
+    height: 44px;
+    margin-right: -5px;
   }
 
   .top-actions {

@@ -1279,32 +1279,32 @@ const categoryKeywordRules = [
 const categoryIds = new Set(categories.map(([id]) => id));
 
 const brandLogo = `
-  <svg class="tv-logo" viewBox="0 0 96 74" aria-hidden="true">
+  <svg class="tv-logo" viewBox="0 0 104 78" aria-hidden="true">
     <defs>
-      <linearGradient id="tvLogoRed" x1="20" y1="12" x2="78" y2="66" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#ff4a42"/>
-        <stop offset="0.42" stop-color="#ff0800"/>
-        <stop offset="1" stop-color="#c90000"/>
+      <linearGradient id="tvLogoRed" x1="18" y1="10" x2="88" y2="72" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#ff3b32"/>
+        <stop offset="0.45" stop-color="#ff0800"/>
+        <stop offset="1" stop-color="#b90000"/>
       </linearGradient>
-      <linearGradient id="tvLogoGloss" x1="20" y1="18" x2="72" y2="58" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#ffffff" stop-opacity="0.7"/>
-        <stop offset="0.34" stop-color="#ffffff" stop-opacity="0.16"/>
+      <linearGradient id="tvLogoGloss" x1="18" y1="30" x2="82" y2="64" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#ffffff" stop-opacity="0.45"/>
+        <stop offset="0.32" stop-color="#ffffff" stop-opacity="0.1"/>
         <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
       </linearGradient>
     </defs>
-    <rect x="22" y="62" width="15" height="6" rx="3" fill="#c90000"/>
-    <rect x="59" y="62" width="15" height="6" rx="3" fill="#c90000"/>
-    <rect x="29" y="14" width="7" height="24" rx="3.5" fill="#ff0800" transform="rotate(-38 32.5 26)"/>
-    <rect x="60" y="14" width="7" height="24" rx="3.5" fill="#ff0800" transform="rotate(38 63.5 26)"/>
-    <circle cx="27" cy="13" r="8" fill="url(#tvLogoRed)"/>
-    <circle cx="69" cy="13" r="8" fill="url(#tvLogoRed)"/>
-    <path d="M38 32a10 10 0 0 1 20 0Z" fill="url(#tvLogoRed)"/>
-    <rect x="9" y="28" width="78" height="38" rx="12" fill="url(#tvLogoRed)"/>
-    <rect x="13" y="32" width="70" height="30" rx="9" fill="url(#tvLogoGloss)"/>
-    <rect x="14" y="32" width="68" height="30" rx="9" fill="none" stroke="#ffb2ae" stroke-opacity="0.5" stroke-width="2"/>
-    <text x="24" y="55" fill="#050505" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="900">TV</text>
-    <circle cx="31" cy="9" r="4" fill="#fff" opacity="0.5"/>
-    <circle cx="65" cy="9" r="4" fill="#fff" opacity="0.5"/>
+    <rect x="23" y="66" width="15" height="6" rx="4" fill="#bd0000"/>
+    <rect x="65" y="66" width="15" height="6" rx="4" fill="#bd0000"/>
+    <rect x="28" y="13" width="8" height="29" rx="4" fill="#ff0800" transform="rotate(-27 32 27.5)"/>
+    <rect x="68" y="13" width="8" height="29" rx="4" fill="#ff0800" transform="rotate(27 72 27.5)"/>
+    <circle cx="25" cy="12" r="10" fill="url(#tvLogoRed)"/>
+    <circle cx="79" cy="12" r="10" fill="url(#tvLogoRed)"/>
+    <circle cx="22" cy="9" r="4" fill="#fff" opacity="0.9"/>
+    <circle cx="76" cy="9" r="4" fill="#fff" opacity="0.9"/>
+    <path d="M40 35a12 12 0 0 1 24 0Z" fill="url(#tvLogoRed)"/>
+    <rect x="8" y="30" width="88" height="40" rx="13" fill="url(#tvLogoRed)"/>
+    <rect x="13" y="35" width="78" height="30" rx="9" fill="none" stroke="#070707" stroke-width="5"/>
+    <path d="M13 35h78v12C68 48 48 55 13 65Z" fill="url(#tvLogoGloss)"/>
+    <text x="23" y="59" fill="#050505" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="31" font-weight="900">TV</text>
   </svg>
 `;
 
