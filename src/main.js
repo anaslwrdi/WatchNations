@@ -1308,6 +1308,38 @@ const brandLogo = `
   </svg>
 `;
 
+const brandLockup = `
+  <svg class="brand-lockup" viewBox="0 0 500 94" role="img" aria-label="WatchNations">
+    <defs>
+      <linearGradient id="brandTvRed" x1="16" y1="28" x2="158" y2="158" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#ff3b32"/>
+        <stop offset="0.45" stop-color="#ff0800"/>
+        <stop offset="1" stop-color="#bd0000"/>
+      </linearGradient>
+      <linearGradient id="brandTvGloss" x1="20" y1="68" x2="150" y2="152" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#ffffff" stop-opacity="0.42"/>
+        <stop offset="0.35" stop-color="#ffffff" stop-opacity="0.1"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <g aria-hidden="true" transform="translate(0 6) scale(0.52)">
+      <rect x="52" y="22" width="14" height="64" rx="7" fill="#ff0800" transform="rotate(-27 59 54)"/>
+      <rect x="128" y="22" width="14" height="64" rx="7" fill="#ff0800" transform="rotate(27 135 54)"/>
+      <circle cx="45" cy="22" r="22" fill="url(#brandTvRed)"/>
+      <circle cx="149" cy="22" r="22" fill="url(#brandTvRed)"/>
+      <circle cx="37" cy="14" r="8" fill="#ffffff" opacity="0.92"/>
+      <circle cx="141" cy="14" r="8" fill="#ffffff" opacity="0.92"/>
+      <path d="M75 88a25 25 0 0 1 50 0Z" fill="url(#brandTvRed)"/>
+      <rect x="12" y="76" width="172" height="82" rx="24" fill="url(#brandTvRed)"/>
+      <rect x="24" y="89" width="148" height="56" rx="15" fill="none" stroke="#060606" stroke-width="10"/>
+      <path d="M25 88h147v23C124 113 79 126 25 151Z" fill="url(#brandTvGloss)"/>
+      <text x="52" y="135" fill="#050505" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="64" font-weight="900">TV</text>
+    </g>
+    <text x="112" y="75" fill="#ff0800" font-family="Arial Black, Inter, Arial, Helvetica, sans-serif" font-size="58" font-weight="900" textLength="155" lengthAdjust="spacingAndGlyphs">Watch</text>
+    <text x="267" y="75" fill="#ffffff" font-family="Arial Black, Inter, Arial, Helvetica, sans-serif" font-size="58" font-weight="900" textLength="218" lengthAdjust="spacingAndGlyphs">Nations</text>
+  </svg>
+`;
+
 const appState = {
   countries: [],
   availableCountryCodes: new Set(),
@@ -1350,7 +1382,7 @@ document.getElementById('root').innerHTML = `
   <main class="shell">
     <header class="topbar">
       <button class="icon-button" id="menuButton" aria-label="${t('openMenu')}">${icons.menu}</button>
-      <div class="brand"><span class="brand-mark">${brandLogo}</span><strong><span class="brand-watch">Watch</span>Nations</strong></div>
+      <div class="brand">${brandLockup}</div>
       <div class="top-actions">
         <label class="language-picker" title="Language">
           <select id="languageSelect" aria-label="Language">
@@ -2622,8 +2654,8 @@ function renderCountries() {
       (country) => `
         <button data-code="${escapeHtml(country.code)}" class="${country.code === appState.selectedCountry?.code ? 'selected' : ''}">
           <span class="country-flag" aria-hidden="true">
-            <img src="${escapeHtml(flagImageUrl(country.code, 40))}" srcset="${escapeHtml(flagSrcSet(country.code, 40))}" alt="" loading="lazy" decoding="async" fetchpriority="low" />
-            <span class="country-flag-fallback">${escapeHtml(country.code)}</span>
+            <img src="${escapeHtml(flagImageUrl(country.code, 40))}" srcset="${escapeHtml(flagSrcSet(country.code, 40))}" alt="" loading="eager" decoding="async" fetchpriority="high" onload="this.classList.add('is-loaded')" />
+            <span class="country-flag-fallback">${escapeHtml(flag(country.code) || country.code)}</span>
           </span>
           <span>${escapeHtml(country.name)}</span>
           <small>${escapeHtml(country.code)}</small>
@@ -2647,8 +2679,8 @@ function renderNewspaperCountries() {
       return `
         <button data-code="${escapeHtml(country.key)}" class="${country.key === appState.selectedNewspaperCountry?.key ? 'selected' : ''}">
           <span class="country-flag" aria-hidden="true">
-            ${country.code ? `<img src="${escapeHtml(flagImageUrl(country.code, 40))}" srcset="${escapeHtml(flagSrcSet(country.code, 40))}" alt="" loading="lazy" decoding="async" fetchpriority="low" />` : ''}
-            <span class="country-flag-fallback">${escapeHtml(country.code || 'NP')}</span>
+            ${country.code ? `<img src="${escapeHtml(flagImageUrl(country.code, 40))}" srcset="${escapeHtml(flagSrcSet(country.code, 40))}" alt="" loading="eager" decoding="async" fetchpriority="high" onload="this.classList.add('is-loaded')" />` : ''}
+            <span class="country-flag-fallback">${escapeHtml(flag(country.code) || country.code || 'NP')}</span>
           </span>
           <span>${escapeHtml(displayName)}</span>
           <small>${country.count}</small>

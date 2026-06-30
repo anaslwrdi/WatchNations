@@ -84,11 +84,20 @@ svg {
   display: flex;
   align-items: center;
   gap: 0;
+  flex: 0 1 360px;
+  width: clamp(260px, 30vw, 360px);
   min-width: 0;
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1;
   height: 58px;
+  line-height: 1;
+}
+
+.brand-lockup {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: initial;
+  stroke: none;
 }
 
 .brand-mark {
@@ -675,6 +684,12 @@ svg {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.country-flag img.is-loaded {
+  opacity: 1;
 }
 
 .country-flag-fallback {
@@ -685,10 +700,9 @@ svg {
   width: 100%;
   height: 100%;
   color: #fff;
-  background:
-    linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.52)),
-    #15161a;
-  font-size: 12px;
+  background: #15161a;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", Inter, Arial, sans-serif;
+  font-size: 19px;
   font-weight: 900;
   letter-spacing: 0;
 }
@@ -1531,8 +1545,13 @@ svg {
   }
 
   .brand {
-    font-size: 23px;
-    height: 44px;
+    flex-basis: 150px;
+    width: clamp(132px, 34vw, 150px);
+    height: 48px;
+  }
+
+  #focusGlobeButton {
+    display: none;
   }
 
   .brand-mark {
