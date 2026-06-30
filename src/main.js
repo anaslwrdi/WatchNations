@@ -3710,20 +3710,31 @@ async function drawWorldTexture(selectedCode) {
     appState.globe.featureByCode.clear();
     appState.countryCenters.clear();
 
+    const moroccoFeatures = [];
+
     appState.geojson.features.forEach((feature, index) => {
       const iso = getFeatureCountryCode(feature);
       if (!iso) return;
       const countryColor = countryDisplayColor(index, iso === selectedCode, iso);
       appState.globe.featureByCode.set(iso, feature);
       appState.countryCenters.set(iso, featureCenter(feature));
+      if (isUnifiedMoroccoCode(iso)) moroccoFeatures.push({ feature, color: countryColor });
 
       ctx.beginPath();
       drawGeoFeature(ctx, feature, textureCanvas);
       ctx.fillStyle = countryColor;
       ctx.fill();
+      if (isUnifiedMoroccoCode(iso)) return;
       ctx.strokeStyle = iso === selectedCode ? '#ffffff' : 'rgba(0, 0, 0, 0.72)';
       ctx.lineWidth = iso === selectedCode ? 3.2 : 1.15;
       ctx.stroke();
+    });
+
+    moroccoFeatures.forEach(({ feature, color }) => {
+      ctx.beginPath();
+      drawGeoFeature(ctx, feature, textureCanvas);
+      ctx.fillStyle = color;
+      ctx.fill();
     });
 
     registerCountryCenters();
@@ -4222,6 +4233,10 @@ function countryDisplayColor(index, selected, code = '') {
 
 function stableCountryColorIndex(code) {
   return [...code].reduce((total, char) => total + char.charCodeAt(0), 0);
+}
+
+function isUnifiedMoroccoCode(code = '') {
+  return normalizeCountryCode(code) === 'MA';
 }
 
 function getFeatureCountryCode(feature) {
