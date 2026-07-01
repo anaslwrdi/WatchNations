@@ -28,7 +28,7 @@ const RADIO_USER_AGENT = 'WatchNations/1.0';
 const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
-const SEO_LASTMOD = '2026-06-24';
+const SEO_LASTMOD = '2026-07-01';
 const SEO_ROUTES = new Set(['/about', '/faq', '/privacy', '/privacy-policy', '/feedback', '/countries']);
 const SEO_CATEGORIES = [
   ['all', 'All Channels', 'free live TV channels from all countries'],
