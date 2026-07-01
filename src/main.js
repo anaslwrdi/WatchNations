@@ -321,7 +321,16 @@ const translations = {
     openDeveloper: 'Open developer page',
     realVisitors: 'Real visitors',
     totalVisits: 'Total visits',
+    todayVisitors: 'Visitors today',
+    todayVisits: 'Visits today',
+    weekVisitors: 'Visitors this week',
+    weekVisits: 'Visits this week',
+    allTimeVisitors: 'All-time visitors',
+    allTimeVisits: 'All-time visits',
+    statsAccuracy: 'Visits count one session per visitor every {minutes} minutes for better accuracy.',
+    firstVisit: 'First visit: {date}',
     lastVisit: 'Last visit: {date}',
+    statsUpdated: 'Updated: {date}',
     currentCode: 'Current code',
     newCode: 'New code',
     changeCode: 'Change code',
@@ -528,7 +537,12 @@ const translations = {
     globalIndexErrorBody: 'تعذر تحميل فهرس القنوات العالمي الآن.',
     developerArea: 'صفحة المطوّر', developerTitle: 'مطوّر WatchNations',
     accessCode: 'كود الدخول', enterCode: 'أدخل الكود', openDeveloper: 'فتح صفحة المطوّر',
-    realVisitors: 'الزوار الحقيقيون', totalVisits: 'إجمالي الزيارات', lastVisit: 'آخر زيارة: {date}',
+    realVisitors: 'الزوار الحقيقيون', totalVisits: 'إجمالي الزيارات',
+    todayVisitors: 'زوار اليوم', todayVisits: 'زيارات اليوم',
+    weekVisitors: 'زوار هذا الأسبوع', weekVisits: 'زيارات هذا الأسبوع',
+    allTimeVisitors: 'مجموع الزوار', allTimeVisits: 'مجموع الزيارات',
+    statsAccuracy: 'يتم احتساب زيارة واحدة لكل زائر كل {minutes} دقيقة لزيادة دقة الإحصائيات.',
+    firstVisit: 'أول زيارة: {date}', lastVisit: 'آخر زيارة: {date}', statsUpdated: 'آخر تحديث: {date}',
     currentCode: 'الكود الحالي', newCode: 'الكود الجديد', changeCode: 'تغيير الكود',
     checkingCode: 'جاري التحقق من الكود...', developerOpen: 'تم فتح صفحة المطوّر.',
     wrongCode: 'الكود غير صحيح.', savingCode: 'جاري حفظ الكود الجديد...', codeChanged: 'تم تغيير الكود بنجاح.',
@@ -1676,17 +1690,38 @@ document.getElementById('root').innerHTML = `
           <button class="developer-primary" type="submit">Open developer page</button>
         </form>
         <section class="developer-panel" id="developerPanel" hidden>
+          <p class="developer-meta developer-accuracy" id="developerAccuracy">Visits count one session per visitor every 30 minutes for better accuracy.</p>
           <div class="developer-stats">
             <div>
-              <small>Real visitors</small>
+              <small data-stat-label="todayVisitors">Visitors today</small>
+              <strong id="developerTodayVisitors">0</strong>
+            </div>
+            <div>
+              <small data-stat-label="todayVisits">Visits today</small>
+              <strong id="developerTodayVisits">0</strong>
+            </div>
+            <div>
+              <small data-stat-label="weekVisitors">Visitors this week</small>
+              <strong id="developerWeekVisitors">0</strong>
+            </div>
+            <div>
+              <small data-stat-label="weekVisits">Visits this week</small>
+              <strong id="developerWeekVisits">0</strong>
+            </div>
+            <div>
+              <small data-stat-label="allTimeVisitors">All-time visitors</small>
               <strong id="developerVisitors">0</strong>
             </div>
             <div>
-              <small>Total visits</small>
+              <small data-stat-label="allTimeVisits">All-time visits</small>
               <strong id="developerTotalVisits">0</strong>
             </div>
           </div>
-          <p class="developer-meta" id="developerLastVisit">Last visit: -</p>
+          <div class="developer-timeline">
+            <p class="developer-meta" id="developerFirstVisit">First visit: -</p>
+            <p class="developer-meta" id="developerLastVisit">Last visit: -</p>
+            <p class="developer-meta" id="developerStatsUpdated">Updated: -</p>
+          </div>
           <form class="developer-code-form" id="developerCodeForm">
             <label>Current code<input id="developerCurrentCode" type="password" autocomplete="current-password" /></label>
             <label>New code<input id="developerNewCode" type="password" autocomplete="new-password" minlength="4" /></label>
@@ -3539,9 +3574,10 @@ function applyDeveloperLanguage() {
   document.querySelector('.developer-login label').firstChild.textContent = t('accessCode');
   document.getElementById('developerPassword').placeholder = t('enterCode');
   document.querySelector('#developerLoginForm .developer-primary').textContent = t('openDeveloper');
-  const statLabels = document.querySelectorAll('.developer-stats small');
-  if (statLabels[0]) statLabels[0].textContent = t('realVisitors');
-  if (statLabels[1]) statLabels[1].textContent = t('totalVisits');
+  document.querySelectorAll('[data-stat-label]').forEach((label) => {
+    label.textContent = t(label.dataset.statLabel);
+  });
+  document.getElementById('developerAccuracy').textContent = t('statsAccuracy', { minutes: '30' });
   const codeLabels = document.querySelectorAll('.developer-code-form label');
   if (codeLabels[0]) codeLabels[0].firstChild.textContent = t('currentCode');
   if (codeLabels[1]) codeLabels[1].firstChild.textContent = t('newCode');
@@ -3549,9 +3585,16 @@ function applyDeveloperLanguage() {
 }
 
 function renderDeveloperStats(stats = {}) {
+  document.getElementById('developerTodayVisitors').textContent = Number(stats.todayVisitors || 0).toLocaleString();
+  document.getElementById('developerTodayVisits').textContent = Number(stats.todayVisits || 0).toLocaleString();
+  document.getElementById('developerWeekVisitors').textContent = Number(stats.weekVisitors || 0).toLocaleString();
+  document.getElementById('developerWeekVisits').textContent = Number(stats.weekVisits || 0).toLocaleString();
   document.getElementById('developerVisitors').textContent = Number(stats.visitors || 0).toLocaleString();
   document.getElementById('developerTotalVisits').textContent = Number(stats.totalVisits || 0).toLocaleString();
+  document.getElementById('developerAccuracy').textContent = t('statsAccuracy', { minutes: stats.sessionWindowMinutes || 30 });
+  document.getElementById('developerFirstVisit').textContent = t('firstVisit', { date: formatDeveloperDate(stats.firstVisitAt) });
   document.getElementById('developerLastVisit').textContent = t('lastVisit', { date: formatDeveloperDate(stats.lastVisitAt) });
+  document.getElementById('developerStatsUpdated').textContent = t('statsUpdated', { date: formatDeveloperDate(stats.updatedAt || stats.lastVisitAt) });
 }
 
 function setDeveloperMessage(message) {

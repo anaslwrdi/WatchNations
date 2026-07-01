@@ -1361,7 +1361,7 @@ svg {
 
 .developer-dialog {
   position: relative;
-  width: min(560px, 100%);
+  width: min(720px, 100%);
   max-height: min(86vh, 760px);
   overflow: hidden;
   color: #f7f9fb;
@@ -1457,13 +1457,13 @@ svg {
 
 .developer-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
 .developer-stats > div {
-  min-height: 112px;
-  padding: 18px;
+  min-height: 118px;
+  padding: 16px;
   background: #15161a;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -1479,8 +1479,24 @@ svg {
   display: block;
   margin-top: 12px;
   color: #fff;
-  font-size: 34px;
+  font-size: 32px;
   line-height: 1;
+}
+
+.developer-accuracy {
+  padding: 12px 14px;
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  border-radius: 8px;
+}
+
+.developer-timeline {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
 }
 
 .developer-meta,
@@ -1632,7 +1648,7 @@ svg {
   }
 
   .developer-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .mode-switch {

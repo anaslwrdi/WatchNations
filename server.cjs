@@ -15,6 +15,8 @@ const API_RATE_LIMIT_WINDOW_MS = 60_000;
 const API_RATE_LIMIT_MAX = 180;
 const DEVELOPER_STATE_FILE = path.join(rootPath, 'data', 'developer-state.json');
 const DEFAULT_DEVELOPER_PASSWORD = 'laxa123';
+const VISIT_SESSION_WINDOW_MS = 30 * 60_000;
+const VISITOR_STATS_TIME_ZONE = 'Africa/Casablanca';
 const rateLimitBuckets = new Map();
 const RADIO_BROWSER_HOSTS = [
   'https://de1.api.radio-browser.info',
@@ -1247,6 +1249,9 @@ function defaultDeveloperState() {
     passwordHash: hashDeveloperSecret(DEFAULT_DEVELOPER_PASSWORD),
     totalVisits: 0,
     uniqueVisitors: [],
+    dailyVisits: {},
+    weeklyVisits: {},
+    recentVisitors: {},
     firstVisitAt: '',
     lastVisitAt: '',
     updatedAt: new Date().toISOString()
@@ -1259,7 +1264,10 @@ function loadDeveloperState() {
     return {
       ...defaultDeveloperState(),
       ...state,
-      uniqueVisitors: Array.isArray(state.uniqueVisitors) ? state.uniqueVisitors : []
+      uniqueVisitors: Array.isArray(state.uniqueVisitors) ? state.uniqueVisitors : [],
+      dailyVisits: normalizeVisitBuckets(state.dailyVisits),
+      weeklyVisits: normalizeVisitBuckets(state.weeklyVisits),
+      recentVisitors: typeof state.recentVisitors === 'object' && state.recentVisitors ? state.recentVisitors : {}
     };
   } catch (error) {
     const state = defaultDeveloperState();
@@ -1292,11 +1300,24 @@ function trackVisitor(payload, request) {
   const state = loadDeveloperState();
   const visitorId = safeText(payload?.visitorId, 120) || `${request.socket.remoteAddress || 'local'}:${request.headers['user-agent'] || ''}`;
   const visitorHash = hashDeveloperSecret(visitorId);
-  const now = new Date().toISOString();
-  state.totalVisits = Number(state.totalVisits || 0) + 1;
+  const nowDate = new Date();
+  const now = nowDate.toISOString();
+  const todayKey = getVisitorDateKey(nowDate);
+  const weekKey = getVisitorWeekKey(nowDate);
+  const lastSeen = Number(state.recentVisitors?.[visitorHash] || 0);
+  const isNewSession = !lastSeen || nowDate.getTime() - lastSeen > VISIT_SESSION_WINDOW_MS;
+
+  if (isNewSession) state.totalVisits = Number(state.totalVisits || 0) + 1;
   if (!state.uniqueVisitors.includes(visitorHash)) state.uniqueVisitors.push(visitorHash);
+  touchVisitBucket(state.dailyVisits, todayKey, visitorHash, isNewSession);
+  touchVisitBucket(state.weeklyVisits, weekKey, visitorHash, isNewSession);
+  state.recentVisitors = pruneRecentVisitors({
+    ...(state.recentVisitors || {}),
+    [visitorHash]: nowDate.getTime()
+  }, nowDate.getTime());
   state.firstVisitAt = state.firstVisitAt || now;
   state.lastVisitAt = now;
+  state.updatedAt = now;
   saveDeveloperState(state);
   return publicVisitorStats(state);
 }
@@ -1310,13 +1331,81 @@ function publicVisitorStats(state = loadDeveloperState()) {
 
 function developerStats() {
   const state = loadDeveloperState();
+  const now = new Date();
+  const today = getVisitBucket(state.dailyVisits, getVisitorDateKey(now));
+  const week = getVisitBucket(state.weeklyVisits, getVisitorWeekKey(now));
   return {
     visitors: Number(state.uniqueVisitors.length || 0),
     totalVisits: Number(state.totalVisits || 0),
+    todayVisitors: today.visitors.length,
+    todayVisits: Number(today.visits || 0),
+    weekVisitors: week.visitors.length,
+    weekVisits: Number(week.visits || 0),
     firstVisitAt: state.firstVisitAt || '',
     lastVisitAt: state.lastVisitAt || '',
-    updatedAt: state.updatedAt || ''
+    updatedAt: state.updatedAt || '',
+    todayKey: getVisitorDateKey(now),
+    weekKey: getVisitorWeekKey(now),
+    sessionWindowMinutes: Math.round(VISIT_SESSION_WINDOW_MS / 60_000)
   };
+}
+
+function normalizeVisitBuckets(value) {
+  if (!value || typeof value !== 'object') return {};
+  return Object.fromEntries(
+    Object.entries(value).map(([key, bucket]) => [
+      key,
+      {
+        visits: Number(bucket?.visits || 0),
+        visitors: Array.isArray(bucket?.visitors) ? [...new Set(bucket.visitors.filter(Boolean))] : []
+      }
+    ])
+  );
+}
+
+function touchVisitBucket(buckets, key, visitorHash, isNewSession) {
+  const bucket = getVisitBucket(buckets, key);
+  if (isNewSession) bucket.visits = Number(bucket.visits || 0) + 1;
+  if (!bucket.visitors.includes(visitorHash)) bucket.visitors.push(visitorHash);
+  buckets[key] = bucket;
+}
+
+function getVisitBucket(buckets, key) {
+  return {
+    visits: Number(buckets?.[key]?.visits || 0),
+    visitors: Array.isArray(buckets?.[key]?.visitors) ? buckets[key].visitors : []
+  };
+}
+
+function pruneRecentVisitors(recentVisitors, nowMs) {
+  const maxAge = VISIT_SESSION_WINDOW_MS * 2;
+  return Object.fromEntries(
+    Object.entries(recentVisitors).filter(([, timestamp]) => nowMs - Number(timestamp || 0) <= maxAge)
+  );
+}
+
+function getVisitorDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: VISITOR_STATS_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function getVisitorWeekKey(date = new Date()) {
+  const [year, month, day] = getVisitorDateKey(date).split('-').map(Number);
+  const target = new Date(Date.UTC(year, month - 1, day, 12));
+  const dayIndex = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayIndex + 3);
+  const weekYear = target.getUTCFullYear();
+  const firstThursday = new Date(Date.UTC(weekYear, 0, 4, 12));
+  const firstDayIndex = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayIndex + 3);
+  const week = 1 + Math.round((target - firstThursday) / (7 * 86400000));
+  return `${weekYear}-W${String(week).padStart(2, '0')}`;
 }
 
 async function handleRadioStations(url) {
