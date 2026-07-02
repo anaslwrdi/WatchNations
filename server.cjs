@@ -4481,11 +4481,18 @@ function renderSeoRoute(pathname) {
       title: 'WatchNations FAQ - Free Live TV Questions',
       description: 'Answers to common WatchNations questions about free live TV, radio stations, favorites, safety, privacy, and external streams.',
       heading: 'Frequently Asked Questions',
-      body: [
-        'Is WatchNations free? Yes. WatchNations is free to use and does not require an account or subscription.',
-        'How do I find channels? Choose a country from the globe, use country search, or browse categories such as news, sports, music, movies, kids, weather, and education.',
-        'Why are some channels unavailable? External live streams can change, go offline, or be restricted by the original provider. WatchNations organizes publicly available links but does not control external streams.'
-      ]
+      bodyHtml: `
+      <p>These answers explain how WatchNations works as a free global TV discovery platform for country pages, categories, radio stations, and external live TV links.</p>
+      <h2>WatchNations Questions</h2>
+      <h3>Is WatchNations free?</h3>
+      <p>Yes. WatchNations is free to use and does not require an account, email, subscription, or signup.</p>
+      <h3>How do I find channels?</h3>
+      <p>Choose a country from the globe, use country search, or browse categories such as news, sports, music, movies, kids, weather, and education.</p>
+      <h3>Why are some channels unavailable?</h3>
+      <p>External live streams can change, go offline, or be restricted by the original provider. WatchNations organizes publicly available links but does not control external streams.</p>
+      <h3>Does WatchNations host video streams?</h3>
+      <p>No. WatchNations does not host, upload, or own video content. It organizes external public sources in good faith.</p>
+    `
     });
   }
 
@@ -4688,17 +4695,77 @@ function renderCountrySeoPage(rawCode) {
 
   return seoPage({
     path: `/countries/${code.toLowerCase()}`,
-    title: `${country.name} Live TV Channels - WatchNations`,
-    description: `${countrySeoDescription(code, country)} Browse by country, category, radio, electronic newspapers, and interactive globe.`,
-    heading: `${country.name} Live TV Channels`,
-    body: [
-      `WatchNations helps users watch TV channels by country and discover free live TV channels and radio stations from ${country.name}.`,
-      countryArabicSeoLine(code, country.name),
-      `Open the WatchNations app to browse ${country.name} channels, save favorites, use random TV channel discovery, and explore related categories such as news, sports, music, movies, and weather.`,
-      'Streams are provided by external public sources. WatchNations does not host or control video content.'
-    ],
+    title: `Watch ${country.name} TV Channels Live Online Free | WatchNations`,
+    description: `${country.name} TV channels, radio stations, and online newspapers for free. Browse live news, sports, music, and entertainment on WatchNations.`,
+    heading: `Watch ${country.name} TV Channels Live Online`,
+    bodyHtml: countrySeoBody(code, country),
     cta: { href: `/?country=${code}`, label: `Open ${country.name} in WatchNations` }
   });
+}
+
+function countrySeoBody(code, country) {
+  const nearby = nearbyCountryLinks(code);
+  const categories = countryCategoryLinks(country.name);
+  return `
+      <p>WatchNations is a free country media guide for ${escapeHtml(country.name)}. This page helps viewers watch ${escapeHtml(country.name)} TV channels live online, listen to radio stations, browse online newspapers, and discover useful categories without registration. It is built for people searching for local TV, international TV channels, live news, sports streaming discovery, music, movies, and public media sources by country. Choose the app button to open ${escapeHtml(country.name)} in the interactive globe, then explore channels, radio, newspapers, and favorites from one fast page.</p>
+      <h2 id="live-tv">Live TV Channels</h2>
+      <p>Use the WatchNations app to explore free live TV channels from ${escapeHtml(country.name)} and related international channels by country, language, and category.</p>
+      <h3>${escapeHtml(country.name)} News and Sports TV</h3>
+      <p>Browse news, sports, general, business, weather, and entertainment discovery pages connected to ${escapeHtml(country.name)} and nearby regions.</p>
+      <h2 id="radio">Radio Stations</h2>
+      <p>Listen to radio stations worldwide and discover ${escapeHtml(country.name)} radio streams when public station sources are available through the WatchNations radio browser.</p>
+      <h2 id="newspapers">Online Newspapers</h2>
+      <p>Open electronic newspapers and online news sources from ${escapeHtml(country.name)} when newspaper links are available, or continue to the publisher website directly.</p>
+      <h2 id="categories">Popular Categories</h2>
+      <nav aria-label="${escapeHtml(country.name)} popular categories" class="related-category-links">${categories}</nav>
+      <h2 id="nearby-countries">Nearby Countries</h2>
+      <p>Explore nearby country pages and compare live TV, radio, and online newspaper sources by region.</p>
+      <nav aria-label="Nearby country pages" class="related-category-links">${nearby}</nav>
+      <h2 id="faq">Frequently Asked Questions</h2>
+      <h3>Can I watch ${escapeHtml(country.name)} TV channels for free?</h3>
+      <p>Yes. WatchNations helps you discover free external TV sources and country pages without creating an account.</p>
+      <h3>Does WatchNations include ${escapeHtml(country.name)} radio stations?</h3>
+      <p>Yes. The app includes a radio section and searches public radio station directories when streams are available.</p>
+      <h3>Can I open ${escapeHtml(country.name)} newspapers from this page?</h3>
+      <p>Yes. Newspaper entries can be opened inside the browser view or through a direct link to the newspaper website.</p>
+      <p>${escapeHtml(countryArabicSeoLine(code, country.name))}</p>
+      <p>Streams are provided by external public sources. WatchNations does not host or control video content.</p>
+    `;
+}
+
+function countryCategoryLinks(countryName) {
+  const categoryIds = ['news', 'sports', 'music', 'movies', 'kids', 'documentary', 'business', 'weather'];
+  return categoryIds
+    .map((id) => {
+      const category = SEO_CATEGORIES.find(([categoryId]) => categoryId === id);
+      const label = category ? category[1] : id;
+      return `<a href="/categories/${escapeHtml(id)}">${escapeHtml(countryName)} ${escapeHtml(label)}</a>`;
+    })
+    .join('');
+}
+
+function nearbyCountryLinks(code) {
+  const countryMap = {
+    MA: ['DZ', 'ES', 'FR', 'PT', 'TN', 'EG'],
+    US: ['CA', 'MX', 'GB', 'FR', 'DE', 'BR'],
+    FR: ['BE', 'ES', 'DE', 'IT', 'MA', 'GB'],
+    ES: ['PT', 'FR', 'MA', 'IT', 'DE', 'GB'],
+    SA: ['AE', 'QA', 'KW', 'BH', 'OM', 'EG'],
+    EG: ['SA', 'AE', 'MA', 'DZ', 'TN', 'TR'],
+    GB: ['IE', 'FR', 'DE', 'US', 'CA', 'NL'],
+    DE: ['FR', 'NL', 'BE', 'AT', 'CH', 'GB']
+  };
+  const countries = loadSeoCountries();
+  const preferred = countryMap[normalizeCountryCode(code)] || countries
+    .map((country) => country.code)
+    .filter((countryCode) => countryCode !== normalizeCountryCode(code))
+    .slice(0, 6);
+  return preferred
+    .map((nearbyCode) => countries.find((country) => country.code === normalizeCountryCode(nearbyCode)))
+    .filter(Boolean)
+    .slice(0, 6)
+    .map((country) => `<a href="/countries/${country.code.toLowerCase()}">${escapeHtml(country.name)} TV</a>`)
+    .join('');
 }
 
 function countrySeoDescription(code, country) {
@@ -4736,9 +4803,7 @@ function seoStructuredData({ pathname, title, description, heading, keywords = S
     breadcrumbs.push({ '@type': 'ListItem', position: 2, name: heading, item: canonical });
   }
 
-  const pageType = pathname === '/countries' || pathname.startsWith('/countries/') || pathname === '/categories' || pathname.startsWith('/categories/')
-    ? 'CollectionPage'
-    : 'WebPage';
+  const pageType = seoPageType(pathname);
   const graph = [
     {
       '@type': 'Organization',
@@ -4806,10 +4871,109 @@ function seoStructuredData({ pathname, title, description, heading, keywords = S
       publisher: { '@id': 'https://watchnations.com/#organization' }
     }
   ];
+  const itemList = seoItemList(pathname, heading);
+  if (itemList) graph.push(itemList);
+  const faq = seoFaqPage(pathname, heading);
+  if (faq) graph.push(faq);
 
   return {
     '@context': 'https://schema.org',
     '@graph': graph
+  };
+}
+
+function seoPageType(pathname) {
+  if (pathname === '/about') return 'AboutPage';
+  if (pathname === '/feedback') return 'ContactPage';
+  if (pathname === '/countries' || pathname.startsWith('/countries/') || pathname === '/categories' || pathname.startsWith('/categories/')) return 'CollectionPage';
+  return 'WebPage';
+}
+
+function seoItemList(pathname, heading) {
+  const canonical = `https://watchnations.com${pathname === '/' ? '/' : pathname}`;
+  if (pathname.startsWith('/countries/')) {
+    const countryCode = normalizeCountryCode(pathname.split('/').pop());
+    const country = loadSeoCountries().find((item) => item.code === countryCode);
+    const countryName = country ? country.name : heading;
+    const sections = [
+      ['Live TV Channels', '#live-tv'],
+      ['Radio Stations', '#radio'],
+      ['Online Newspapers', '#newspapers'],
+      ['Popular Categories', '#categories'],
+      ['Nearby Countries', '#nearby-countries'],
+      ['FAQ', '#faq']
+    ];
+    return {
+      '@type': 'ItemList',
+      '@id': `${canonical}#country-sections`,
+      name: `${countryName} TV, radio, and newspaper sections`,
+      itemListElement: sections.map(([name, hash], index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name,
+        url: `${canonical}${hash}`
+      }))
+    };
+  }
+
+  if (pathname === '/categories' || pathname.startsWith('/categories/')) {
+    const categories = SEO_CATEGORIES.slice(0, 12);
+    return {
+      '@type': 'ItemList',
+      '@id': `${canonical}#category-sections`,
+      name: 'WatchNations live TV category pages',
+      itemListElement: categories.map(([id, label], index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: label,
+        url: `https://watchnations.com/categories/${id}`
+      }))
+    };
+  }
+
+  return null;
+}
+
+function seoFaqPage(pathname, heading) {
+  if (pathname === '/faq') {
+    return {
+      '@type': 'FAQPage',
+      '@id': 'https://watchnations.com/faq#faq',
+      mainEntity: [
+        seoQuestion('Is WatchNations free?', 'Yes. WatchNations is free to use and does not require an account, email, subscription, or signup.'),
+        seoQuestion('How do I find channels?', 'Choose a country from the globe, use country search, or browse categories such as news, sports, music, movies, kids, weather, and education.'),
+        seoQuestion('Why are some channels unavailable?', 'External live streams can change, go offline, or be restricted by the original provider. WatchNations organizes publicly available links but does not control external streams.'),
+        seoQuestion('Does WatchNations host video streams?', 'No. WatchNations does not host, upload, or own video content. It organizes external public sources in good faith.')
+      ]
+    };
+  }
+
+  if (pathname.startsWith('/countries/')) {
+    const countryCode = normalizeCountryCode(pathname.split('/').pop());
+    const country = loadSeoCountries().find((item) => item.code === countryCode);
+    const countryName = country ? country.name : heading.replace(/^Watch\s+|\s+TV Channels.*$/g, '');
+    return {
+      '@type': 'FAQPage',
+      '@id': `https://watchnations.com${pathname}#faq-schema`,
+      mainEntity: [
+        seoQuestion(`Can I watch ${countryName} TV channels for free?`, 'Yes. WatchNations helps you discover free external TV sources and country pages without creating an account.'),
+        seoQuestion(`Does WatchNations include ${countryName} radio stations?`, 'Yes. The app includes a radio section and searches public radio station directories when streams are available.'),
+        seoQuestion(`Can I open ${countryName} newspapers from this page?`, 'Yes. Newspaper entries can be opened inside the browser view or through a direct link to the newspaper website.')
+      ]
+    };
+  }
+
+  return null;
+}
+
+function seoQuestion(name, text) {
+  return {
+    '@type': 'Question',
+    name,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text
+    }
   };
 }
 
@@ -4850,6 +5014,10 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:url" content="${escapeHtml(canonical)}">
   <meta property="og:image" content="https://watchnations.com/assets/favicon-512.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
+  <meta name="twitter:image" content="https://watchnations.com/assets/favicon-512.png">
   ${schemaScript(structuredData)}
   <style>
     :root{color:#f7f9fb;background:#050609;font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif}

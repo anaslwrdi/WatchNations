@@ -1,7 +1,19 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://watchnations.com/sitemap.xml
-
-User-agent: bingbot
+User-agent: Googlebot
 Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://watchnations.com/sitemap.xml
