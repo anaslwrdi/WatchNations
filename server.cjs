@@ -28,7 +28,7 @@ const RADIO_USER_AGENT = 'WatchNations/1.0';
 const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
-const SEO_LASTMOD = '2026-07-01';
+const SEO_LASTMOD = '2026-07-02';
 const SEO_ROUTES = new Set(['/about', '/faq', '/privacy', '/privacy-policy', '/feedback', '/countries']);
 const SEO_CATEGORIES = [
   ['all', 'All Channels', 'free live TV channels from all countries'],
@@ -4720,8 +4720,110 @@ function countryArabicSeoLine(code, countryName) {
   return lines[normalizeCountryCode(code)] || `${countryName} is part of the WatchNations country TV guide and global TV channel list free to explore.`;
 }
 
+function seoStructuredData({ pathname, title, description, heading, keywords = SEO_KEYWORDS }) {
+  const canonical = `https://watchnations.com${pathname === '/' ? '/' : pathname}`;
+  const segments = pathname.split('/').filter(Boolean);
+  const breadcrumbs = [
+    { '@type': 'ListItem', position: 1, name: 'WatchNations', item: 'https://watchnations.com/' }
+  ];
+  if (segments[0] === 'countries') {
+    breadcrumbs.push({ '@type': 'ListItem', position: 2, name: 'Countries', item: 'https://watchnations.com/countries' });
+    if (segments[1]) breadcrumbs.push({ '@type': 'ListItem', position: 3, name: heading, item: canonical });
+  } else if (segments[0] === 'categories') {
+    breadcrumbs.push({ '@type': 'ListItem', position: 2, name: 'Categories', item: 'https://watchnations.com/categories' });
+    if (segments[1]) breadcrumbs.push({ '@type': 'ListItem', position: 3, name: heading, item: canonical });
+  } else if (segments.length) {
+    breadcrumbs.push({ '@type': 'ListItem', position: 2, name: heading, item: canonical });
+  }
+
+  const pageType = pathname === '/countries' || pathname.startsWith('/countries/') || pathname === '/categories' || pathname.startsWith('/categories/')
+    ? 'CollectionPage'
+    : 'WebPage';
+  const graph = [
+    {
+      '@type': 'Organization',
+      '@id': 'https://watchnations.com/#organization',
+      name: 'WatchNations',
+      url: 'https://watchnations.com/',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://watchnations.com/assets/watchnations-tv-logo.png'
+      },
+      email: 'lindaraymane@gmail.com'
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://watchnations.com/#website',
+      name: 'WatchNations',
+      url: 'https://watchnations.com/',
+      publisher: { '@id': 'https://watchnations.com/#organization' },
+      inLanguage: ['en', 'ar', 'es', 'fr', 'it', 'pt', 'bn', 'tr', 'ja', 'de', 'nl', 'sv', 'no', 'zh'],
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: 'https://watchnations.com/?q={search_term_string}',
+        'query-input': 'required name=search_term_string'
+      }
+    },
+    {
+      '@type': pageType,
+      '@id': `${canonical}#webpage`,
+      url: canonical,
+      name: title,
+      headline: heading,
+      description,
+      isPartOf: { '@id': 'https://watchnations.com/#website' },
+      about: { '@id': 'https://watchnations.com/#webapp' },
+      primaryImageOfPage: {
+        '@type': 'ImageObject',
+        url: 'https://watchnations.com/assets/favicon-512.png'
+      },
+      dateModified: SEO_LASTMOD,
+      inLanguage: 'en',
+      keywords: compactSeoList(keywords, 80)
+    },
+    {
+      '@type': 'BreadcrumbList',
+      '@id': `${canonical}#breadcrumb`,
+      itemListElement: breadcrumbs
+    },
+    {
+      '@type': 'WebApplication',
+      '@id': 'https://watchnations.com/#webapp',
+      name: 'WatchNations',
+      url: 'https://watchnations.com/',
+      applicationCategory: 'EntertainmentApplication',
+      operatingSystem: 'Web',
+      isAccessibleForFree: true,
+      description: 'Explore free live TV, radio stations, electronic newspapers, and international media by country and category.',
+      featureList: [
+        'Interactive 3D globe TV discovery',
+        'Watch TV channels by country',
+        'Free live TV without registration',
+        'Radio stations worldwide',
+        'Electronic newspapers by country',
+        'Category-specific live TV discovery'
+      ],
+      publisher: { '@id': 'https://watchnations.com/#organization' }
+    }
+  ];
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': graph
+  };
+}
+
+function schemaScript(data) {
+  return `<script type="application/ld+json">${escapeScriptJson(JSON.stringify(data))}</script>`;
+}
+
+function escapeScriptJson(value) {
+  return String(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
+}
+
 function seoPage({ path: pathname, title, description, heading, body = [], bodyHtml = '', cta, keywords = SEO_KEYWORDS, newsKeywords = SEO_KEYWORDS.slice(0, 12) }) {
   const canonical = `https://watchnations.com${pathname === '/' ? '/' : pathname}`;
+  const structuredData = seoStructuredData({ pathname, title, description, heading, keywords });
   const paragraphs = body.map((text) => `<p>${escapeHtml(text)}</p>`).join('');
   const action = cta ? `<p><a class="button" href="${escapeHtml(cta.href)}">${escapeHtml(cta.label)}</a></p>` : '<p><a class="button" href="/">Open WatchNations App</a></p>';
   const internalLinks = '<nav aria-label="Internal links"><a href="/">Home</a><a href="/countries">Countries</a><a href="/categories">Categories</a><a href="/categories/news">News</a><a href="/categories/sports">Sports</a><a href="/categories/kids">Kids TV</a><a href="/countries/us">United States</a><a href="/countries/sa">Saudi Arabia</a><a href="/countries/fr">France</a></nav>';
@@ -4748,6 +4850,7 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:url" content="${escapeHtml(canonical)}">
   <meta property="og:image" content="https://watchnations.com/assets/favicon-512.png">
+  ${schemaScript(structuredData)}
   <style>
     :root{color:#f7f9fb;background:#050609;font-family:Inter,Segoe UI,Tahoma,Arial,sans-serif}
     body{margin:0;background:#050609;color:#f7f9fb;line-height:1.7}
