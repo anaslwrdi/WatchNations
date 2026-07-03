@@ -4716,6 +4716,12 @@ function countrySeoBody(code, country, countrySeo = null) {
   const keywordLine = countrySeo?.keywords?.length
     ? `<p>Search topics for this country page include ${escapeHtml(formatSeoList(countrySeo.keywords.slice(0, 8)))}.</p>`
     : '';
+  const monetizationKeywords = compactSeoList(countrySeo?.monetizationKeywords || [], 12);
+  const monetizationLine = monetizationKeywords.length
+    ? `
+      <h2 id="high-value-search">High Value ${escapeHtml(country.name)} TV Search Topics</h2>
+      <p>This country page also targets high-value advertising searches such as ${escapeHtml(formatSeoList(monetizationKeywords))}.</p>`
+    : '';
   const regionLine = countrySeo?.region || countrySeo?.language
     ? `<p>This page is organized for ${escapeHtml(countrySeo.region || 'global')} viewers and audiences looking for ${escapeHtml(countrySeo.language || country.name)} media.</p>`
     : '';
@@ -4734,6 +4740,7 @@ function countrySeoBody(code, country, countrySeo = null) {
       <p>${escapeHtml(intro)}</p>
       ${regionLine}
       ${keywordLine}
+      ${monetizationLine}
       <h2 id="live-tv">${escapeHtml(headings.liveTv)}</h2>
       <p>Use the WatchNations app to explore free live TV channels from ${escapeHtml(country.name)} and related international channels by country, language, and category.</p>
       <h3>${escapeHtml(country.name)} News and Sports TV</h3>
