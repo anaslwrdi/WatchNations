@@ -29,7 +29,7 @@ const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
 let countrySeoTextsCache = null;
-const SEO_LASTMOD = '2026-07-02';
+const SEO_LASTMOD = '2026-07-08';
 const SEO_ROUTES = new Set(['/about', '/faq', '/privacy', '/privacy-policy', '/feedback', '/countries']);
 const SEO_CATEGORIES = [
   ['all', 'All Channels', 'free live TV channels from all countries'],
@@ -3665,6 +3665,16 @@ const SEO_CATEGORY_DETAILS = {
   }
 };
 const SEO_KEYWORDS = [
+  "international live tv free",
+  "international tv live",
+  "world tv channel free",
+  "world tv stations",
+  "watch free live world tv",
+  "watch world tv channels online free app",
+  "worldwide tv channels live",
+  "world tv channels live streaming",
+  "free tv channels around the world",
+  "watch all tv channels for free",
   "interactive 3d globe tv channels",
   "watch tv channels by country map",
   "free live tv no email required",
@@ -4535,12 +4545,12 @@ function renderSeoRoute(pathname) {
 
   return seoPage({
     path: '/',
-    title: 'WatchNations - Watch Global TV Online Free',
-    description: 'Watch global TV online free by country with no signup. Explore live news, sports, radio, and international channels.',
+    title: 'WatchNations - International Live TV Free Online',
+    description: 'Watch international live TV free online with no signup. Browse world TV channels, live news, sports, radio, and country TV stations.',
     heading: 'WatchNations',
     body: [
-      'WatchNations is a global TV channel aggregator for people who want to watch global TV online free, watch local TV online free, browse a world TV channel list, and discover international TV channels free.',
-      'Use interactive 3D globe TV channels, free live TV no subscription, TV streaming no signup, online television, world TV channels streaming, news live, sports streaming, radio stations worldwide, and electronic newspapers by country from one free app.',
+      'WatchNations is a global TV channel aggregator for people who search for international live TV free, world TV channel free, world TV stations, and watch global TV online free with no signup.',
+      'Use interactive 3D globe TV channels, free live TV no subscription, TV streaming no signup, online television, world TV channels streaming, international TV live, news live, sports streaming, radio stations worldwide, and electronic newspapers by country from one free app.',
       'WatchNations also supports sports discovery keywords such as world cup 2026 live stream free, olympics 2026 live streaming free, champions league live stream free, and دوري روشن السعودي بث مباشر.',
       'French viewers can use WatchNations to regarder tv en direct gratuit and explore tv en direct monde entier.',
       'Arabic users can explore مشاهدة قنوات عربية بث مباشر مجانا, قنوات عربية بث مباشر بدون اشتراك, قنوات سعودية بث مباشر, قنوات مصرية بث مباشر مجاني, and قنوات اماراتية اونلاين.'
@@ -4596,10 +4606,16 @@ function renderCategorySeoPage(rawCategory) {
   const [id, label, summary] = category;
   const detail = SEO_CATEGORY_DETAILS[id] || {};
   const categoryKeywords = buildCategoryKeywords(id);
+  const title = id === 'news'
+    ? 'Live News Channels Free - International TV News | WatchNations'
+    : `${label} Live TV Channels - WatchNations`;
+  const description = id === 'news'
+    ? 'Watch live news channels free online by country. Explore international TV live news, world TV stations, and breaking news streams.'
+    : categoryDescription(label, summary, detail);
   return seoPage({
     path: `/categories/${id}`,
-    title: `${label} Live TV Channels - WatchNations`,
-    description: categoryDescription(label, summary, detail),
+    title,
+    description,
     heading: `${label} Live TV Channels`,
     bodyHtml: categorySeoBody(id, label, summary, detail),
     keywords: categoryKeywords,
@@ -4638,9 +4654,13 @@ function categorySeoBody(id, label, summary, detail = {}) {
     .slice(0, 8)
     .map(([categoryId, categoryLabel]) => `<a href="/categories/${escapeHtml(categoryId)}">${escapeHtml(categoryLabel)}</a>`)
     .join('');
+  const searchConsoleOpportunity = id === 'news'
+    ? '<h2>International Live TV News Free</h2><p>This page is tuned for Google searches such as international live tv free, international tv live, world tv stations, and live news channels by country.</p>'
+    : '';
 
   return `
       <p>WatchNations helps users discover ${escapeHtml(summary)} through a fast global TV guide, country pages, and the interactive 3D globe.</p>
+      ${searchConsoleOpportunity}
       <h2>${escapeHtml(label)} TV Search Intent</h2>
       <p>${escapeHtml(sentenceFromList(primary, `${label.toLowerCase()} live TV`, `${label} searches include`))}</p>
       <h3>High-Intent ${escapeHtml(label)} Keywords</h3>
@@ -4774,6 +4794,14 @@ function countrySeoHeadings(country, countrySeo = null) {
 }
 
 function countrySeoMetaDescription(countrySeo, country) {
+  const gscDescriptions = {
+    SA: 'Watch Saudi Arabia TV channels live online free. Browse Saudi news, sports, radio, online newspapers, and Arabic TV with no signup.',
+    US: 'Watch United States TV channels live online free. Browse US news, sports, radio, world TV stations, and local TV with no signup.',
+    MA: 'Watch Morocco TV channels live online free. Browse Moroccan news, sports, radio, online newspapers, and Arabic/French TV sources.',
+    ES: 'Watch Spain TV channels live online free. Browse Spanish news, sports, radio, online newspapers, and world TV stations by country.',
+    PT: 'Watch Portugal TV channels live online free. Browse Portuguese news, sports, radio, online newspapers, and international TV live.'
+  };
+  if (gscDescriptions[country?.code]) return gscDescriptions[country.code];
   let description = safeSeoText(countrySeo?.metaDescription, '', 180);
   if (/\sby\.$/i.test(description)) description = description.replace(/\sby\.$/i, ' by country.');
   if (!description || description.length < 80) {
@@ -5054,7 +5082,7 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   const structuredData = seoStructuredData({ pathname, title, description, heading, keywords });
   const paragraphs = body.map((text) => `<p>${escapeHtml(text)}</p>`).join('');
   const action = cta ? `<p><a class="button" href="${escapeHtml(cta.href)}">${escapeHtml(cta.label)}</a></p>` : '<p><a class="button" href="/">Open WatchNations App</a></p>';
-  const internalLinks = '<nav aria-label="Internal links"><a href="/">Home</a><a href="/countries">Countries</a><a href="/categories">Categories</a><a href="/categories/news">News</a><a href="/categories/sports">Sports</a><a href="/categories/kids">Kids TV</a><a href="/countries/us">United States</a><a href="/countries/sa">Saudi Arabia</a><a href="/countries/fr">France</a></nav>';
+  const internalLinks = '<nav aria-label="Internal links"><a href="/">Home</a><a href="/countries">Countries</a><a href="/categories">Categories</a><a href="/categories/news">Live News</a><a href="/categories/sports">Sports</a><a href="/categories/kids">Kids TV</a><a href="/countries/us">United States TV</a><a href="/countries/sa">Saudi Arabia TV</a><a href="/countries/ma">Morocco TV</a><a href="/countries/es">Spain TV</a><a href="/countries/pt">Portugal TV</a><a href="/countries/fr">France TV</a></nav>';
   return `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
