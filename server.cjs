@@ -4234,6 +4234,16 @@ const server = http.createServer((request, response) => {
       return;
     }
 
+    const hostname = String(request.headers.host || '').split(':')[0].toLowerCase();
+    if ((request.method === 'GET' || request.method === 'HEAD') && hostname === 'www.watchnations.com') {
+      response.writeHead(301, {
+        Location: `https://watchnations.com${url.pathname}${url.search}`,
+        'Cache-Control': 'public, max-age=86400'
+      });
+      response.end();
+      return;
+    }
+
     if (url.pathname.startsWith('/api/') && !allowApiRequest(request, response)) {
       return;
     }
