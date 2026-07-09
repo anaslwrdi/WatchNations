@@ -4588,13 +4588,27 @@ function renderCategoriesSeoPage() {
   const categoryLinks = SEO_CATEGORIES
     .map(([id, label, summary]) => `<li><a href="/categories/${id}">${escapeHtml(label)} live TV</a><span>${escapeHtml(summary)}</span></li>`)
     .join('');
+  const priorityLinks = [
+    ['news', 'Live news channels for breaking news and international TV news'],
+    ['sports', 'Live sports TV for football, events, and global sports discovery'],
+    ['kids', 'Kids TV channels for family-safe children programming'],
+    ['documentary', 'Documentary TV channels for science, nature, and culture'],
+    ['business', 'Business TV channels for markets and economy updates'],
+    ['weather', 'Weather TV channels for forecasts and live conditions']
+  ]
+    .map(([id, text]) => `<li><a href="/categories/${id}">${escapeHtml(text)}</a></li>`)
+    .join('');
   return seoPage({
     path: '/categories',
     title: 'Live TV Categories - WatchNations',
-    description: 'Browse free live TV channels by category on WatchNations, discover international TV channels, and watch news from around the world.',
+    description: 'Browse live TV categories on WatchNations: news, sports, kids, movies, music, documentaries, weather, and international channels.',
     heading: 'Browse Live TV by Category',
     bodyHtml: `
       <p>WatchNations organizes global live TV channels into categories so users can discover channels by topic, by country, and through random TV channel discovery.</p>
+      <h2>Popular Live TV Categories</h2>
+      <p>Use this page as a clean index for international live TV categories. It helps viewers jump from broad searches such as free live TV channels to focused pages for news, sports, kids, movies, documentaries, music, weather, business, and education.</p>
+      <h3>High-Intent Category Shortcuts</h3>
+      <ul>${priorityLinks}</ul>
       <ul class="category-grid">${categoryLinks}</ul>
     `
   });
@@ -4752,6 +4766,7 @@ function countrySeoBody(code, country, countrySeo = null) {
   const nearby = nearbyCountryLinks(code);
   const categories = countryCategoryLinks(country.name);
   const headings = countrySeoHeadings(country, countrySeo);
+  const coverageRecovery = countryCoverageRecoveryBody(code, country);
   const intro = safeSeoText(countrySeo?.intro, '', 900)
     || `WatchNations is a free country media guide for ${country.name}. This page helps viewers watch ${country.name} TV channels live online, listen to radio stations, browse online newspapers, and discover useful categories without registration. It is built for people searching for local TV, international TV channels, live news, sports streaming discovery, music, movies, and public media sources by country. Choose the app button to open ${country.name} in the interactive globe, then explore channels, radio, newspapers, and favorites from one fast page.`;
   const keywordLine = countrySeo?.keywords?.length
@@ -4782,6 +4797,7 @@ function countrySeoBody(code, country, countrySeo = null) {
       ${regionLine}
       ${keywordLine}
       ${monetizationLine}
+      ${coverageRecovery}
       <h2 id="live-tv">${escapeHtml(headings.liveTv)}</h2>
       <p>Use the WatchNations app to explore free live TV channels from ${escapeHtml(country.name)} and related international channels by country, language, and category.</p>
       <h3>${escapeHtml(country.name)} News and Sports TV</h3>
@@ -4800,6 +4816,29 @@ function countrySeoBody(code, country, countrySeo = null) {
       <p>${escapeHtml(countryArabicSeoLine(code, country.name))}</p>
       <p>Streams are provided by external public sources. WatchNations does not host or control video content.</p>
     `;
+}
+
+function countryCoverageRecoveryBody(code, country) {
+  const normalizedCode = normalizeCountryCode(code);
+  if (normalizedCode === 'AQ') {
+    return `
+      <h2 id="antarctica-media-guide">Antarctica Research and Public Media Guide</h2>
+      <p>Antarctica is different from normal country pages because it does not have a large domestic television market. This page is useful for viewers looking for Antarctica public information, research updates, science documentaries, weather context, polar exploration media, and international channels that cover Antarctic expeditions.</p>
+      <h3>Best Uses for Antarctica Live Media Discovery</h3>
+      <p>Use WatchNations to open the Antarctica page in the globe, then move to documentary, science, weather, education, and news categories for related coverage from public broadcasters and global media sources.</p>
+      <nav aria-label="Antarctica related TV categories" class="related-category-links"><a href="/categories/documentary">Antarctica Documentary TV</a><a href="/categories/science">Antarctica Science TV</a><a href="/categories/weather">Antarctica Weather TV</a><a href="/categories/education">Antarctica Education TV</a><a href="/categories/news">Antarctica News Coverage</a></nav>
+    `;
+  }
+  if (normalizedCode === 'MD') {
+    return `
+      <h2 id="moldova-tv-radio-news-guide">Moldova TV, Radio, and News Guide</h2>
+      <p>This Moldova page is built for people searching for Moldovan TV channels live online, Moldova news channels, Moldova radio stations, Romanian-language media, Russian-language media, and local public information sources from Moldova.</p>
+      <h3>Moldova Media Categories</h3>
+      <p>Start with Moldova live TV, then browse Moldova news, sports, music, business, education, and online newspapers. The page also connects Moldova with nearby country pages for Romania, Ukraine, Bulgaria, Turkey, and regional European TV discovery.</p>
+      <nav aria-label="Moldova related TV categories" class="related-category-links"><a href="/categories/news">Moldova News TV</a><a href="/categories/sports">Moldova Sports TV</a><a href="/categories/music">Moldova Music TV</a><a href="/categories/business">Moldova Business TV</a><a href="/countries/ro">Romania TV</a><a href="/countries/ua">Ukraine TV</a></nav>
+    `;
+  }
+  return '';
 }
 
 function countrySeoHeadings(country, countrySeo = null) {
