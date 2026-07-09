@@ -29,8 +29,8 @@ const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
 let countrySeoTextsCache = null;
-const SEO_LASTMOD = '2026-07-08';
-const SEO_ROUTES = new Set(['/about', '/faq', '/privacy', '/privacy-policy', '/feedback', '/countries']);
+const SEO_LASTMOD = '2026-07-09';
+const SEO_ROUTES = new Set(['/about', '/faq', '/privacy-policy', '/feedback', '/countries']);
 const SEO_CATEGORIES = [
   ['all', 'All Channels', 'free live TV channels from all countries'],
   ['top-news', 'Top News', 'top live news channels from around the world'],
@@ -4319,6 +4319,15 @@ const server = http.createServer((request, response) => {
       return;
     }
 
+    if (url.pathname === '/privacy') {
+      response.writeHead(301, {
+        Location: '/privacy-policy',
+        'Cache-Control': 'public, max-age=86400'
+      });
+      response.end();
+      return;
+    }
+
     if (url.pathname === '/sitemap.xml') {
       sendTextResponse(request, response, 200, buildSitemap(), 'application/xml; charset=utf-8', 'public, max-age=3600');
       return;
@@ -4507,7 +4516,7 @@ function renderSeoRoute(pathname) {
     });
   }
 
-  if (pathname === '/privacy' || pathname === '/privacy-policy') {
+  if (pathname === '/privacy-policy') {
     return seoPage({
       path: pathname,
       title: 'Privacy Policy - WatchNations',
@@ -4626,9 +4635,9 @@ function renderCategorySeoPage(rawCategory) {
 
 
 function categoryDescription(label, summary, detail = {}) {
-  const primary = compactSeoList([...(detail.primary || []), ...(detail.keywords || [])], 4).join(', ');
-  const suffix = primary ? ` Search topics include ${primary}.` : '';
-  return `Discover ${summary} on WatchNations. Browse free live TV channels by category, country, and interactive 3D globe TV channels.${suffix}`.slice(0, 300);
+  const primary = compactSeoList([...(detail.primary || []), ...(detail.keywords || [])], 2).join(', ');
+  const suffix = primary ? ` Includes ${primary}.` : '';
+  return safeSeoText(`Discover ${summary} on WatchNations. Browse live TV by category, country, and 3D globe.${suffix}`, '', 155);
 }
 
 function buildCategoryKeywords(id) {
@@ -4637,9 +4646,21 @@ function buildCategoryKeywords(id) {
     ...(detail.keywords || []),
     ...(detail.primary || []),
     ...(detail.headings || []),
-    ...(detail.subheadings || []),
-    ...SEO_KEYWORDS
-  ], 220);
+    ...(detail.subheadings || [])
+  ], 80);
+}
+
+function countryPageKeywords(countrySeo = null, country) {
+  const countryName = country?.name || 'Country';
+  return compactSeoList([
+    ...(countrySeo?.keywords || []),
+    ...(countrySeo?.monetizationKeywords || []),
+    `${countryName} TV live free`,
+    `${countryName} live TV channels`,
+    `${countryName} online radio`,
+    `${countryName} newspapers online`,
+    `watch ${countryName} TV online free`
+  ], 120);
 }
 
 function categorySeoBody(id, label, summary, detail = {}) {
@@ -4717,11 +4738,11 @@ function renderCountrySeoPage(rawCode) {
 
   return seoPage({
     path: `/countries/${code.toLowerCase()}`,
-    title: safeSeoText(countrySeo?.seoTitle, `Watch ${country.name} TV Channels Live Online Free | WatchNations`, 90),
+    title: countrySeoTitle(countrySeo, country),
     description: countrySeoMetaDescription(countrySeo, country),
     heading: safeSeoText(countrySeo?.h1, `Watch ${country.name} TV Channels Live Online`, 90),
     bodyHtml: countrySeoBody(code, country, countrySeo),
-    keywords: compactSeoList([...(countrySeo?.keywords || []), ...SEO_KEYWORDS], 220),
+    keywords: countryPageKeywords(countrySeo, country),
     newsKeywords: compactSeoList(countrySeo?.keywords || SEO_KEYWORDS, 12),
     cta: { href: `/?country=${code}`, label: `Open ${country.name} in WatchNations` }
   });
@@ -4793,6 +4814,14 @@ function countrySeoHeadings(country, countrySeo = null) {
   };
 }
 
+function countrySeoTitle(countrySeo, country) {
+  const fallback = `Watch ${country.name} TV Channels Live Online Free | WatchNations`;
+  const title = safeSeoText(countrySeo?.seoTitle, fallback, 90);
+  if (title.length <= 70) return title;
+  const shortTitle = `${country.name} TV Online | WatchNations`;
+  return shortTitle.length <= 70 ? shortTitle : `Watch ${country.code} TV Online | WatchNations`;
+}
+
 function countrySeoMetaDescription(countrySeo, country) {
   const gscDescriptions = {
     SA: 'Watch Saudi Arabia TV channels live online free. Browse Saudi news, sports, radio, online newspapers, and Arabic TV with no signup.',
@@ -4802,12 +4831,12 @@ function countrySeoMetaDescription(countrySeo, country) {
     PT: 'Watch Portugal TV channels live online free. Browse Portuguese news, sports, radio, online newspapers, and international TV live.'
   };
   if (gscDescriptions[country?.code]) return gscDescriptions[country.code];
-  let description = safeSeoText(countrySeo?.metaDescription, '', 180);
+  let description = safeSeoText(countrySeo?.metaDescription, '', 155);
   if (/\sby\.$/i.test(description)) description = description.replace(/\sby\.$/i, ' by country.');
   if (!description || description.length < 80) {
     description = `${country.name} TV channels, radio stations, and online newspapers for free. Browse live news, sports, music, and entertainment on WatchNations.`;
   }
-  return description;
+  return safeSeoText(description, '', 155);
 }
 
 function safeSeoText(value, fallback = '', limit = 300) {
@@ -5077,7 +5106,7 @@ function escapeScriptJson(value) {
   return String(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 }
 
-function seoPage({ path: pathname, title, description, heading, body = [], bodyHtml = '', cta, keywords = SEO_KEYWORDS, newsKeywords = SEO_KEYWORDS.slice(0, 12) }) {
+function seoPage({ path: pathname, title, description, heading, body = [], bodyHtml = '', cta, keywords = SEO_KEYWORDS.slice(0, 80), newsKeywords = SEO_KEYWORDS.slice(0, 24) }) {
   const canonical = `https://watchnations.com${pathname === '/' ? '/' : pathname}`;
   const structuredData = seoStructuredData({ pathname, title, description, heading, keywords });
   const paragraphs = body.map((text) => `<p>${escapeHtml(text)}</p>`).join('');
@@ -5138,7 +5167,7 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
 }
 
 function buildSitemap() {
-  const staticUrls = ['/', '/countries', '/categories', '/about', '/faq', '/privacy', '/privacy-policy', '/feedback'];
+  const staticUrls = ['/', '/countries', '/categories', '/about', '/faq', '/privacy-policy', '/feedback'];
   const countryUrls = loadSeoCountries().map((country) => `/countries/${country.code.toLowerCase()}`);
   const categoryUrls = SEO_CATEGORIES.map(([id]) => `/categories/${id}`);
   const urls = [...staticUrls, ...categoryUrls, ...countryUrls]
