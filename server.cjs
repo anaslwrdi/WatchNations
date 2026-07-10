@@ -4678,13 +4678,12 @@ function countryPageKeywords(countrySeo = null, country) {
   const countryName = country?.name || 'Country';
   return compactSeoList([
     ...(countrySeo?.keywords || []),
-    ...(countrySeo?.monetizationKeywords || []),
     `${countryName} TV live free`,
     `${countryName} live TV channels`,
     `${countryName} online radio`,
     `${countryName} newspapers online`,
     `watch ${countryName} TV online free`
-  ], 120);
+  ], 60);
 }
 
 function categorySeoBody(id, label, summary, detail = {}) {
@@ -4779,15 +4778,6 @@ function countrySeoBody(code, country, countrySeo = null) {
   const coverageRecovery = countryCoverageRecoveryBody(code, country);
   const intro = safeSeoText(countrySeo?.intro, '', 900)
     || `WatchNations is a free country media guide for ${country.name}. This page helps viewers watch ${country.name} TV channels live online, listen to radio stations, browse online newspapers, and discover useful categories without registration. It is built for people searching for local TV, international TV channels, live news, sports streaming discovery, music, movies, and public media sources by country. Choose the app button to open ${country.name} in the interactive globe, then explore channels, radio, newspapers, and favorites from one fast page.`;
-  const keywordLine = countrySeo?.keywords?.length
-    ? `<p>Search topics for this country page include ${escapeHtml(formatSeoList(countrySeo.keywords.slice(0, 8)))}.</p>`
-    : '';
-  const monetizationKeywords = compactSeoList(countrySeo?.monetizationKeywords || [], 12);
-  const monetizationLine = monetizationKeywords.length
-    ? `
-      <h2 id="high-value-search">High Value ${escapeHtml(country.name)} TV Search Topics</h2>
-      <p>This country page also targets high-value advertising searches such as ${escapeHtml(formatSeoList(monetizationKeywords))}.</p>`
-    : '';
   const regionLine = countrySeo?.region || countrySeo?.language
     ? `<p>This page is organized for ${escapeHtml(countrySeo.region || 'global')} viewers and audiences looking for ${escapeHtml(countrySeo.language || country.name)} media.</p>`
     : '';
@@ -4805,8 +4795,6 @@ function countrySeoBody(code, country, countrySeo = null) {
   return `
       <p>${escapeHtml(intro)}</p>
       ${regionLine}
-      ${keywordLine}
-      ${monetizationLine}
       ${coverageRecovery}
       <h2 id="live-tv">${escapeHtml(headings.liveTv)}</h2>
       <p>Use the WatchNations app to explore free live TV channels from ${escapeHtml(country.name)} and related international channels by country, language, and category.</p>
