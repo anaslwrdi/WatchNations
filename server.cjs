@@ -4578,9 +4578,9 @@ function renderSeoRoute(pathname) {
 
   return seoPage({
     path: '/',
-    title: 'WatchNations - International Live TV Free Online',
-    description: 'Watch international live TV free online with no signup. Browse world TV channels, live news, sports, radio, and country TV stations.',
-    heading: 'WatchNations',
+    title: 'Watch 500+ World TV Channels Free | WatchNations',
+    description: 'Watch 500+ free live TV channels from 100+ countries. Stream news, sports, movies, music, radio and local TV online with no signup.',
+    heading: 'Watch Free Live TV Channels Online',
     body: [
       'WatchNations is a free guide for discovering live TV channels by country, international radio stations, and electronic newspapers from one fast web app.',
       'The homepage connects viewers to world TV channels, live news, sports, local stations, and random channel discovery without requiring an account or email.',
