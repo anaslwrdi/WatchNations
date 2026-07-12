@@ -4497,11 +4497,15 @@ function renderSeoRoute(pathname) {
       title: 'About WatchNations - Free Global TV Discovery',
       description: 'Learn about WatchNations, a free platform for discovering live TV channels and radio stations by country, category, and interactive globe.',
       heading: 'About WatchNations',
-      body: [
-        'WatchNations helps people discover free live TV channels and radio stations from around the world. The platform is built around country browsing, category discovery, favorites, and an interactive 3D globe.',
-        'The service does not require sign-up or subscription. Users can choose a country, browse available channels, and open live streams from public external sources.',
-        'WatchNations is neutral and global. It does not host, upload, own, or control video streams. Copyright and DMCA questions can be sent to lindaraymane@gmail.com.'
-      ]
+      bodyHtml: `
+      <p>WatchNations helps people discover free live TV channels, radio stations, and electronic newspapers from around the world. The platform is built around country browsing, category discovery, favorites, and an interactive 3D globe.</p>
+      <h2>Global TV Discovery by Country</h2>
+      <p>Users can start with the country index, choose a region on the globe, or browse categories such as news, sports, kids, music, documentaries, business, weather, and education. Each country page is designed as a clear entry point for local media discovery.</p>
+      <h2>Free Access Without Registration</h2>
+      <p>The service does not require sign-up, email, or subscription. Users can choose a country, browse available channels, and open live streams from public external sources.</p>
+      <h2>External Public Sources</h2>
+      <p>WatchNations is neutral and global. It does not host, upload, own, or control video streams. Copyright and DMCA questions can be sent to lindaraymane@gmail.com.</p>
+    `
     });
   }
 
@@ -4532,11 +4536,16 @@ function renderSeoRoute(pathname) {
       title: 'Privacy Policy - WatchNations',
       description: 'Read the WatchNations privacy policy covering external links, local favorites, analytics, cookies, and user privacy.',
       heading: 'Privacy Policy',
-      body: [
-        'WatchNations does not require users to create an account or provide personal information to browse free live TV and radio sources.',
-        'Favorite channels may be stored locally in the browser. This means saved favorites stay on the user device and are not sent to WatchNations servers.',
-        'The platform may link to external streams and websites. Those third-party sources have their own privacy policies and content rules.'
-      ]
+      bodyHtml: `
+      <p>WatchNations does not require users to create an account or provide personal information to browse free live TV, radio sources, country pages, or category pages.</p>
+      <h2>No Account Required</h2>
+      <p>Visitors can use the website without creating a profile. Core browsing features work without email, registration, or subscription.</p>
+      <h2>Local Favorites and Browser Storage</h2>
+      <p>Favorite channels may be stored locally in the browser. This means saved favorites stay on the user device and are not sent to WatchNations servers.</p>
+      <h2>External Streams and Websites</h2>
+      <p>The platform may link to external streams, radio directories, newspapers, and publisher websites. Those third-party sources have their own privacy policies and content rules.</p>
+      <p>WatchNations keeps this policy simple because the service is designed as a discovery layer. The website focuses on helping visitors find country media pages and external sources while keeping personal data collection minimal.</p>
+    `
     });
   }
 
@@ -4546,11 +4555,16 @@ function renderSeoRoute(pathname) {
       title: 'Feedback and Copyright Contact - WatchNations',
       description: 'Contact WatchNations to suggest channels, report broken links, send feedback, or submit copyright and DMCA removal requests.',
       heading: 'Feedback and Copyright Contact',
-      body: [
-        'Users can contact WatchNations to suggest a channel, report a broken link, share a feature idea, or ask about copyright concerns.',
-        'WatchNations respects copyright laws and does not host or upload video content. The platform organizes external public sources in good faith.',
-        'For feedback, DMCA, or copyright requests, email lindaraymane@gmail.com.'
-      ]
+      bodyHtml: `
+      <p>Users can contact WatchNations to suggest a channel, report a broken link, share a feature idea, or ask about copyright concerns.</p>
+      <h2>Suggest Channels and Countries</h2>
+      <p>Send suggestions for missing TV channels, radio stations, electronic newspapers, country pages, or category improvements. Clear source information helps us review links faster.</p>
+      <h2>Report Broken External Links</h2>
+      <p>External streams can change or become unavailable. Reports help keep country pages and category pages useful for viewers and search engines.</p>
+      <h2>Copyright and DMCA Contact</h2>
+      <p>WatchNations respects copyright laws and does not host or upload video content. The platform organizes external public sources in good faith. For feedback, DMCA, or copyright requests, email lindaraymane@gmail.com.</p>
+      <p>When reporting a problem, include the page URL, channel or newspaper name, and a short explanation. This helps us review the source, update country pages, and keep the media guide reliable for users and search engines.</p>
+    `
     });
   }
 
@@ -4588,6 +4602,8 @@ function renderCountriesSeoPage() {
     heading: 'Browse Live TV by Country',
     bodyHtml: `
       <p>Choose a country to discover free live TV channels, radio stations worldwide, and a global TV channel list free to browse. Each country page links back to the interactive WatchNations app.</p>
+      <h2>Country Pages for Global TV Discovery</h2>
+      <p>This index helps search engines and viewers reach every country page from one stable location. Each page includes local TV discovery, radio, online newspapers, useful categories, and nearby country links.</p>
       <ul class="country-grid">${countryLinks}</ul>
     `
   });
@@ -4853,9 +4869,9 @@ function countrySeoHeadings(country, countrySeo = null) {
 function countrySeoTitle(countrySeo, country) {
   const fallback = `Watch ${country.name} TV Channels Live Online Free | WatchNations`;
   const title = safeSeoText(countrySeo?.seoTitle, fallback, 90);
-  if (title.length <= 70) return title;
+  if (title.length <= 58) return title;
   const shortTitle = `${country.name} TV Online | WatchNations`;
-  return shortTitle.length <= 70 ? shortTitle : `Watch ${country.code} TV Online | WatchNations`;
+  return shortTitle.length <= 58 ? shortTitle : `Watch ${country.code} TV Online | WatchNations`;
 }
 
 function countrySeoMetaDescription(countrySeo, country) {
