@@ -29,7 +29,7 @@ const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
 let countrySeoTextsCache = null;
-const SEO_LASTMOD = '2026-07-09';
+const SEO_LASTMOD = '2026-07-12';
 const SEO_ROUTES = new Set(['/about', '/faq', '/privacy-policy', '/feedback', '/countries']);
 const SEO_CATEGORIES = [
   ['all', 'All Channels', 'free live TV channels from all countries'],
@@ -4568,11 +4568,10 @@ function renderSeoRoute(pathname) {
     description: 'Watch international live TV free online with no signup. Browse world TV channels, live news, sports, radio, and country TV stations.',
     heading: 'WatchNations',
     body: [
-      'WatchNations is a global TV channel aggregator for people who search for international live TV free, world TV channel free, world TV stations, and watch global TV online free with no signup.',
-      'Use interactive 3D globe TV channels, free live TV no subscription, TV streaming no signup, online television, world TV channels streaming, international TV live, news live, sports streaming, radio stations worldwide, and electronic newspapers by country from one free app.',
-      'WatchNations also supports sports discovery keywords such as world cup 2026 live stream free, olympics 2026 live streaming free, champions league live stream free, and دوري روشن السعودي بث مباشر.',
-      'French viewers can use WatchNations to regarder tv en direct gratuit and explore tv en direct monde entier.',
-      'Arabic users can explore مشاهدة قنوات عربية بث مباشر مجانا, قنوات عربية بث مباشر بدون اشتراك, قنوات سعودية بث مباشر, قنوات مصرية بث مباشر مجاني, and قنوات اماراتية اونلاين.'
+      'WatchNations is a free guide for discovering live TV channels by country, international radio stations, and electronic newspapers from one fast web app.',
+      'The homepage connects viewers to world TV channels, live news, sports, local stations, and random channel discovery without requiring an account or email.',
+      'Use the country index, category pages, and interactive globe to move naturally from global TV discovery to focused pages for news, sports, kids TV, Morocco channels, Saudi channels, French TV, Spanish TV, and more.',
+      'WatchNations supports multilingual discovery for viewers in English, Arabic, French, Spanish, Italian, Portuguese, Bengali, Turkish, Japanese, German, Dutch, Swedish, Norwegian, and Chinese.'
     ]
   });
 }
@@ -4617,7 +4616,7 @@ function renderCategoriesSeoPage() {
       <p>WatchNations organizes global live TV channels into categories so users can discover channels by topic, by country, and through random TV channel discovery.</p>
       <h2>Popular Live TV Categories</h2>
       <p>Use this page as a clean index for international live TV categories. It helps viewers jump from broad searches such as free live TV channels to focused pages for news, sports, kids, movies, documentaries, music, weather, business, and education.</p>
-      <h3>High-Intent Category Shortcuts</h3>
+      <h3>Featured Category Shortcuts</h3>
       <ul>${priorityLinks}</ul>
       <ul class="category-grid">${categoryLinks}</ul>
     `
@@ -4671,7 +4670,7 @@ function buildCategoryKeywords(id) {
     ...(detail.primary || []),
     ...(detail.headings || []),
     ...(detail.subheadings || [])
-  ], 80);
+  ], 40);
 }
 
 function countryPageKeywords(countrySeo = null, country) {
@@ -4683,14 +4682,14 @@ function countryPageKeywords(countrySeo = null, country) {
     `${countryName} online radio`,
     `${countryName} newspapers online`,
     `watch ${countryName} TV online free`
-  ], 60);
+  ], 36);
 }
 
 function categorySeoBody(id, label, summary, detail = {}) {
   const primary = compactSeoList(detail.primary || [], 8);
   const headings = compactSeoList(detail.headings || [], 10);
   const subheadings = compactSeoList(detail.subheadings || [], 12);
-  const keywords = compactSeoList(detail.keywords || [], 22);
+  const keywords = compactSeoList(detail.keywords || [], 10);
   const countries = compactSeoList(detail.countries || [], 15);
   const languages = compactSeoList(detail.languages || [], 14);
   const related = SEO_CATEGORIES
@@ -4699,22 +4698,22 @@ function categorySeoBody(id, label, summary, detail = {}) {
     .map(([categoryId, categoryLabel]) => `<a href="/categories/${escapeHtml(categoryId)}">${escapeHtml(categoryLabel)}</a>`)
     .join('');
   const searchConsoleOpportunity = id === 'news'
-    ? '<h2>International Live TV News Free</h2><p>This page is tuned for Google searches such as international live tv free, international tv live, world tv stations, and live news channels by country.</p>'
+    ? '<h2>International Live TV News</h2><p>Use this page to move from global headlines to country news channels, public broadcasters, and live international TV news sources without creating an account.</p>'
     : '';
 
   return `
       <p>WatchNations helps users discover ${escapeHtml(summary)} through a fast global TV guide, country pages, and the interactive 3D globe.</p>
       ${searchConsoleOpportunity}
-      <h2>${escapeHtml(label)} TV Search Intent</h2>
-      <p>${escapeHtml(sentenceFromList(primary, `${label.toLowerCase()} live TV`, `${label} searches include`))}</p>
-      <h3>High-Intent ${escapeHtml(label)} Keywords</h3>
-      <p>${escapeHtml(sentenceFromList(keywords, `${label.toLowerCase()} channels online free`, 'People also search for'))}</p>
+      <h2>${escapeHtml(label)} TV Discovery</h2>
+      <p>${escapeHtml(sentenceFromList(primary, `${label.toLowerCase()} live TV`, `Popular ${label.toLowerCase()} viewing paths include`))}</p>
+      <h3>Useful ${escapeHtml(label)} Channel Topics</h3>
+      <p>${escapeHtml(sentenceFromList(keywords, `${label.toLowerCase()} channels online free`, 'Viewers can explore'))}</p>
       <h2>${escapeHtml(label)} Channels by Country and Language</h2>
       <p>This category is optimized for viewers searching from ${escapeHtml(formatSeoList(countries))}. It also supports multilingual discovery in ${escapeHtml(formatSeoList(languages))}.</p>
       <h3>Related ${escapeHtml(label)} Headings</h3>
       <p>${escapeHtml(sentenceFromList(headings, `watch ${label.toLowerCase()} online`, 'Useful page topics include'))}</p>
       <h3>More ${escapeHtml(label)} Discovery Topics</h3>
-      <p>${escapeHtml(sentenceFromList(subheadings, `${label.toLowerCase()} streaming`, 'Additional searches include'))}</p>
+      <p>${escapeHtml(sentenceFromList(subheadings, `${label.toLowerCase()} streaming`, 'Additional viewing paths include'))}</p>
       <nav aria-label="Related category pages" class="related-category-links">${related}</nav>
       <p>Streams are provided by external public sources. WatchNations does not host or control video content.</p>
     `;
@@ -4734,7 +4733,7 @@ function compactSeoList(items = [], limit = 20) {
 }
 
 function sentenceFromList(items, fallback, prefix) {
-  const list = compactSeoList(items, 12);
+  const list = compactSeoList(items, 8);
   return `${prefix} ${formatSeoList(list.length ? list : [fallback])}.`;
 }
 
@@ -4991,8 +4990,7 @@ function seoStructuredData({ pathname, title, description, heading, keywords = S
         url: 'https://watchnations.com/assets/favicon-512.png'
       },
       dateModified: SEO_LASTMOD,
-      inLanguage: 'en',
-      keywords: compactSeoList(keywords, 80)
+      inLanguage: 'en'
     },
     {
       '@type': 'BreadcrumbList',
@@ -5143,7 +5141,7 @@ function escapeScriptJson(value) {
   return String(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 }
 
-function seoPage({ path: pathname, title, description, heading, body = [], bodyHtml = '', cta, keywords = SEO_KEYWORDS.slice(0, 80), newsKeywords = SEO_KEYWORDS.slice(0, 24) }) {
+function seoPage({ path: pathname, title, description, heading, body = [], bodyHtml = '', cta, keywords = SEO_KEYWORDS.slice(0, 40), newsKeywords = SEO_KEYWORDS.slice(0, 12) }) {
   const canonical = `https://watchnations.com${pathname === '/' ? '/' : pathname}`;
   const structuredData = seoStructuredData({ pathname, title, description, heading, keywords });
   const paragraphs = body.map((text) => `<p>${escapeHtml(text)}</p>`).join('');
