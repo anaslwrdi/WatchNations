@@ -29,7 +29,7 @@ const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
 let countrySeoTextsCache = null;
-const SEO_LASTMOD = '2026-07-12';
+const SEO_LASTMOD = '2026-07-13';
 const SEO_ROUTES = new Set(['/about', '/faq', '/privacy-policy', '/feedback', '/countries']);
 const SEO_CATEGORIES = [
   ['all', 'All Channels', 'free live TV channels from all countries'],
@@ -4580,7 +4580,7 @@ function renderSeoRoute(pathname) {
     path: '/',
     title: 'Watch 500+ World TV Channels Free | WatchNations',
     description: 'Watch 500+ free live TV channels from 100+ countries. Stream news, sports, movies, music, radio and local TV online with no signup.',
-    heading: 'Watch Free Live TV Channels Online',
+    heading: 'Explore Free Live TV, Radio, and World Media',
     body: [
       'WatchNations is a free guide for discovering live TV channels by country, international radio stations, and electronic newspapers from one fast web app.',
       'The homepage connects viewers to world TV channels, live news, sports, local stations, and random channel discovery without requiring an account or email.',
