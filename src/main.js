@@ -4,6 +4,10 @@ let DateTime;
 
 const API_BASE = 'https://iptv-org.github.io/api';
 const IPTV_BASE = 'https://iptv-org.github.io/iptv';
+const IPTV_COUNTRY_PLAYLIST_BASES = [
+  IPTV_BASE,
+  'https://raw.githubusercontent.com/iptv-org/iptv/master/streams'
+];
 const WORLD_GEOJSON = '/data/countries-lite.json';
 const LOCAL_COUNTRIES = '/data/iptv-countries.min.json';
 const NEWSPAPERS_DATA = '/data/newspapers.json';
@@ -12,7 +16,9 @@ const palette = ['#1eb6d9', '#e7c51e', '#3daf58', '#d84d77', '#f2643f', '#9b58b4
 const channelCache = new Map();
 let iptvApiIndexPromise;
 const LOAD_EXTERNAL_LOGOS = false;
-const CHANNEL_CACHE_VERSION = 'playable-alternates-v2';
+const CHANNEL_CACHE_VERSION = 'playable-alternates-v3';
+const FAILED_STREAMS_STORAGE_KEY = 'watchnations:failed-streams:v1';
+const FAILED_STREAM_TTL_MS = 12 * 60 * 60_000;
 const INITIAL_CHANNEL_RENDER_LIMIT = window.matchMedia('(max-width: 760px)').matches ? 60 : 140;
 const CHANNEL_RENDER_INCREMENT = window.matchMedia('(max-width: 760px)').matches ? 90 : 220;
 const countryCodeAliases = {
@@ -1379,7 +1385,7 @@ const appState = {
   aiChannels: null,
   aiInsight: '',
   videoReadyPromise: null,
-  failedStreams: new Set(),
+  failedStreams: loadFailedStreams(),
   favorites: new Set(safeParseJSON(localStorage.getItem('watchnations:favorites'), [])),
   favoriteChannels: new Map(safeParseJSON(localStorage.getItem('watchnations:favorite-channels'), []).map((channel) => [channel.url, channel])),
   geojson: null,
@@ -2400,12 +2406,16 @@ async function loadCountryChannels(code) {
 async function loadM3UChannels(code) {
   let lastError;
   for (const candidate of candidateCountryCodes(code)) {
-    try {
-      const response = await fetch(`${IPTV_BASE}/countries/${candidate.toLowerCase()}.m3u`);
-      if (!response.ok) throw new Error(`No playlist for ${candidate}`);
-      return parseM3U(await response.text(), normalizeCountryCode(code));
-    } catch (error) {
-      lastError = error;
+    for (const base of IPTV_COUNTRY_PLAYLIST_BASES) {
+      try {
+        const path = base === IPTV_BASE ? `countries/${candidate.toLowerCase()}.m3u` : `${candidate.toLowerCase()}.m3u`;
+        const response = await fetch(`${base}/${path}`, { signal: AbortSignal.timeout(14_000) });
+        if (!response.ok) throw new Error(`No playlist for ${candidate}`);
+        const channels = parseM3U(await response.text(), normalizeCountryCode(code));
+        if (channels.length) return channels;
+      } catch (error) {
+        lastError = error;
+      }
     }
   }
   throw lastError || new Error(`No playlist for ${code}`);
@@ -2910,11 +2920,17 @@ function smartFilterChannels(channels) {
     })
     : channels;
 
+  output = output
+    .map((channel) => refreshChannelPlayableUrls(channel))
+    .filter((channel) => channel.url);
+
   if (appState.selectedCategory !== 'favorites' && appState.selectedCategory !== 'all') {
     output = output.filter((channel) => channelMatchesCategory(channel, appState.selectedCategory));
   }
 
-  if (!query) return output;
+  if (!query) {
+    return output.sort((a, b) => channelReliabilityScore(b) - channelReliabilityScore(a) || a.name.localeCompare(b.name));
+  }
 
   return output
     .map((channel) => {
@@ -2923,7 +2939,7 @@ function smartFilterChannels(channels) {
       let score = 0;
       if (haystack.includes(query)) score += 30;
       if (normalize(channel.name).startsWith(query)) score += 30;
-      if (String(channel.url).toLowerCase().includes('.m3u8')) score += 3;
+      score += Math.min(25, channelReliabilityScore(channel));
       return { channel, score };
     })
     .filter((item) => item.score > 0)
@@ -2976,11 +2992,47 @@ function sanitizeChannel(channel) {
   };
 }
 
+function loadFailedStreams() {
+  const now = Date.now();
+  const rows = safeParseJSON(localStorage.getItem(FAILED_STREAMS_STORAGE_KEY), []);
+  const active = rows
+    .filter((item) => item?.url && now - Number(item.failedAt || 0) < FAILED_STREAM_TTL_MS)
+    .slice(-400);
+  if (active.length !== rows.length) {
+    safeLocalSet(FAILED_STREAMS_STORAGE_KEY, active);
+  }
+  return new Set(active.map((item) => item.url));
+}
+
+function rememberFailedStream(url) {
+  const normalized = sanitizeUrl(url);
+  if (!normalized) return;
+  appState.failedStreams.add(normalized);
+  const now = Date.now();
+  const rows = safeParseJSON(localStorage.getItem(FAILED_STREAMS_STORAGE_KEY), [])
+    .filter((item) => item?.url && item.url !== normalized && now - Number(item.failedAt || 0) < FAILED_STREAM_TTL_MS)
+    .slice(-399);
+  rows.push({ url: normalized, failedAt: now });
+  safeLocalSet(FAILED_STREAMS_STORAGE_KEY, rows);
+}
+
 function collectAlternateUrls(channel) {
   const urls = [channel.url, ...(Array.isArray(channel.alternateUrls) ? channel.alternateUrls : [])]
     .map(sanitizeUrl)
     .filter(Boolean);
   return [...new Set(urls)].sort((a, b) => urlReliabilityScore(b) - urlReliabilityScore(a));
+}
+
+function refreshChannelPlayableUrls(channel) {
+  const alternates = collectAlternateUrls(channel);
+  if (!alternates.length) return { ...channel, url: '', alternateUrls: [] };
+  const playable = alternates.filter((url) => !appState.failedStreams.has(url));
+  if (!playable.length) return { ...channel, url: '', alternateUrls: [] };
+  return {
+    ...channel,
+    url: playable[0],
+    alternateUrls: playable
+  };
 }
 
 function isLikelyPlayableTvUrl(url, type = 'tv') {
@@ -2989,6 +3041,8 @@ function isLikelyPlayableTvUrl(url, type = 'tv') {
   if (!normalized) return false;
   if (normalized.includes('/youtube.com/') || normalized.includes('youtu.be/')) return false;
   if (normalized.includes('/facebook.com/') || normalized.includes('/twitch.tv/')) return false;
+  if (normalized.includes('/embed/') || normalized.includes('/watch?')) return false;
+  if (normalized.includes('ustream') || normalized.includes('dailymotion.com')) return false;
   if (/\.(m3u8|mpd|mp4)(?:[?#]|$)/i.test(normalized)) return true;
   return normalized.includes('m3u8') || normalized.includes('mpegts') || normalized.includes('playlist');
 }
@@ -2998,11 +3052,13 @@ function urlReliabilityScore(url) {
   let score = 0;
   if (normalized.startsWith('https://')) score += 10;
   if (normalized.includes('.m3u8')) score += 12;
+  if (normalized.includes('iptv-org.github.io')) score += 4;
   if (normalized.includes('/index.m3u8') || normalized.includes('/playlist.m3u8')) score += 3;
   if (normalized.includes('.mpd')) score += 7;
   if (normalized.includes('.mp4')) score += 5;
-  if (normalized.includes('token=') || normalized.includes('expires=') || normalized.includes('sig=')) score -= 4;
-  if (normalized.includes('youtube') || normalized.includes('facebook') || normalized.includes('twitch')) score -= 40;
+  if (normalized.includes('token=') || normalized.includes('expires=') || normalized.includes('sig=')) score -= 8;
+  if (normalized.includes('youtube') || normalized.includes('facebook') || normalized.includes('twitch') || normalized.includes('dailymotion')) score -= 60;
+  if (appState?.failedStreams?.has(url)) score -= 80;
   return score;
 }
 
@@ -3140,7 +3196,11 @@ function playRandomChannel() {
     showToast(t('unsafeChannel'));
     return;
   }
-  playChannel(url, channel.name);
+  playChannel(url, channel.name, {
+    channel,
+    type: channel.type || appState.mediaMode,
+    id: channel.id
+  });
 }
 
 async function playChannel(rawUrl, rawTitle = 'Live TV', options = {}) {
@@ -3197,7 +3257,7 @@ async function playTvCandidate(urls, title, options = {}, attempt = 0) {
     finished = true;
     clearFallback();
     player.off('error', onError);
-    appState.failedStreams.add(url);
+    rememberFailedStream(url);
     const nextAttempt = attempt + 1;
     if (nextAttempt < urls.length) {
       showToast(t('tryingAlternateStream'));
@@ -3208,6 +3268,7 @@ async function playTvCandidate(urls, title, options = {}, attempt = 0) {
       return;
     }
     showToast(t('playerError'));
+    renderChannels();
   };
 
   player.off('error');
@@ -3221,13 +3282,14 @@ async function playTvCandidate(urls, title, options = {}, attempt = 0) {
     if (playResult?.catch) {
       playResult.catch(() => {
         clearFallback();
-        appState.failedStreams.add(url);
+        rememberFailedStream(url);
         if (attempt + 1 < urls.length) {
           showToast(t('tryingAlternateStream'));
           playTvCandidate(urls, title, options, attempt + 1);
           return;
         }
         showToast(t('pressPlayStream'));
+        renderChannels();
       });
     }
   });
@@ -4486,6 +4548,14 @@ function safeSessionSet(key, value) {
     sessionStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
     // Large IPTV and radio indexes can exceed browser storage; the live in-memory state still works.
+  }
+}
+
+function safeLocalSet(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    // Private browsing or full storage should not break playback.
   }
 }
 

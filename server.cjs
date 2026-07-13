@@ -30,7 +30,9 @@ const SOCIAL_LINKS = [
   ['Instagram', 'https://www.instagram.com/watchnations_tv/']
 ];
 const tvCategoryCache = new Map();
-const TV_CATEGORY_CACHE_MS = 15 * 60_000;
+const TV_CATEGORY_CACHE_MS = 6 * 60 * 60_000;
+const externalJsonCache = new Map();
+const EXTERNAL_JSON_CACHE_MS = 6 * 60 * 60_000;
 const compressedFileCache = new Map();
 let countrySeoTextsCache = null;
 let seoImplementationPlanCache = null;
@@ -5572,7 +5574,7 @@ function staticCacheControl(filePath) {
   if (topLevel === 'assets') return 'public, max-age=31536000, immutable';
   if (topLevel === 'data') return 'public, max-age=3600, stale-while-revalidate=86400';
   if (['robots.txt', 'sitemap.xml', 'site.webmanifest', 'llms.txt', 'BingSiteAuth.xml', 'hdWiS7.js'].includes(relative)) return 'public, max-age=3600, stale-while-revalidate=86400';
-  if (topLevel === 'src') return 'no-cache, max-age=0, must-revalidate';
+  if (topLevel === 'src') return 'public, max-age=31536000, immutable';
   return 'no-cache, max-age=0, must-revalidate';
 }
 
@@ -5863,24 +5865,31 @@ async function handleTvCategory(url) {
     const channel = channelById.get(channelId);
     if (!channel || !channelMatchesServerCategory(channel, category)) continue;
     const item = sanitizeTvChannel(channel, stream);
-    if (!item.url) continue;
+    if (!item.url || !isLikelyPlayableServerTvUrl(item.url)) continue;
     output.push(item);
-    if (output.length >= limit) break;
   }
 
-  const payload = { category, channels: output };
+  const payload = { category, channels: dedupeServerTvChannels(output).slice(0, limit) };
   tvCategoryCache.set(cacheKey, { createdAt: Date.now(), payload });
   if (tvCategoryCache.size > 80) tvCategoryCache.delete(tvCategoryCache.keys().next().value);
   return payload;
 }
 
 async function fetchJson(url) {
+  const cached = externalJsonCache.get(url);
+  if (cached && Date.now() - cached.createdAt < EXTERNAL_JSON_CACHE_MS) return cached.data;
   const response = await fetch(url, {
     headers: { 'Accept': 'application/json' },
     signal: AbortSignal.timeout(30_000)
   });
-  if (!response.ok) throw new Error(`Fetch failed ${response.status}`);
-  return response.json();
+  if (!response.ok) {
+    if (cached?.data) return cached.data;
+    throw new Error(`Fetch failed ${response.status}`);
+  }
+  const data = await response.json();
+  externalJsonCache.set(url, { createdAt: Date.now(), data });
+  if (externalJsonCache.size > 20) externalJsonCache.delete(externalJsonCache.keys().next().value);
+  return data;
 }
 
 function channelMatchesServerCategory(channel, category) {
@@ -5918,6 +5927,54 @@ function sanitizeTvChannel(channel, stream) {
     country,
     type: 'tv'
   };
+}
+
+function dedupeServerTvChannels(channels) {
+  const byChannel = new Map();
+  channels
+    .filter((channel) => channel.url && isLikelyPlayableServerTvUrl(channel.url))
+    .sort((a, b) => serverUrlReliabilityScore(b.url) - serverUrlReliabilityScore(a.url) || a.name.localeCompare(b.name))
+    .forEach((channel) => {
+      const key = `${String(channel.id || channel.name).toLowerCase()}|${channel.country}`;
+      const existing = byChannel.get(key);
+      if (!existing) {
+        byChannel.set(key, { ...channel, alternateUrls: [channel.url] });
+        return;
+      }
+      const alternates = new Set([...(existing.alternateUrls || []), channel.url]);
+      existing.alternateUrls = [...alternates]
+        .sort((a, b) => serverUrlReliabilityScore(b) - serverUrlReliabilityScore(a))
+        .slice(0, 8);
+      if (serverUrlReliabilityScore(channel.url) > serverUrlReliabilityScore(existing.url)) {
+        byChannel.set(key, { ...channel, alternateUrls: existing.alternateUrls });
+      }
+    });
+  return [...byChannel.values()]
+    .sort((a, b) => serverUrlReliabilityScore(b.url) - serverUrlReliabilityScore(a.url) || a.name.localeCompare(b.name));
+}
+
+function isLikelyPlayableServerTvUrl(value) {
+  const normalized = String(value || '').toLowerCase();
+  if (!normalized) return false;
+  if (normalized.includes('/youtube.com/') || normalized.includes('youtu.be/')) return false;
+  if (normalized.includes('/facebook.com/') || normalized.includes('/twitch.tv/')) return false;
+  if (normalized.includes('/embed/') || normalized.includes('/watch?')) return false;
+  if (normalized.includes('dailymotion.com') || normalized.includes('ustream')) return false;
+  if (/\.(m3u8|mpd|mp4)(?:[?#]|$)/i.test(normalized)) return true;
+  return normalized.includes('m3u8') || normalized.includes('mpegts') || normalized.includes('playlist');
+}
+
+function serverUrlReliabilityScore(value) {
+  const normalized = String(value || '').toLowerCase();
+  let score = 0;
+  if (normalized.startsWith('https://')) score += 10;
+  if (normalized.includes('.m3u8')) score += 12;
+  if (normalized.includes('/index.m3u8') || normalized.includes('/playlist.m3u8')) score += 3;
+  if (normalized.includes('.mpd')) score += 7;
+  if (normalized.includes('.mp4')) score += 5;
+  if (normalized.includes('token=') || normalized.includes('expires=') || normalized.includes('sig=')) score -= 8;
+  if (normalized.includes('youtube') || normalized.includes('facebook') || normalized.includes('twitch') || normalized.includes('dailymotion')) score -= 60;
+  return score;
 }
 
 async function fetchRadioBrowser(pathname) {
