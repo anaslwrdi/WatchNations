@@ -160,7 +160,6 @@ const primaryNavItems = [
 
 const categories = [
   ['all', 'All Channels', 'tv'],
-  ['top-news', 'Top News', 'news'],
   ['news', 'News', 'news'],
   ['music', 'Music', 'music'],
   ['sports', 'Sports', 'trophy'],

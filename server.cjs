@@ -29,6 +29,7 @@ const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
 let countrySeoTextsCache = null;
+let seoImplementationPlanCache = null;
 const SEO_LASTMOD = '2026-07-13';
 const SEO_ROUTES = new Set(['/about', '/faq', '/privacy-policy', '/feedback', '/countries']);
 const SEO_CATEGORIES = [
@@ -4338,6 +4339,16 @@ const server = http.createServer((request, response) => {
       return;
     }
 
+    const seoRedirect = seoRedirectTarget(url.pathname);
+    if (seoRedirect) {
+      response.writeHead(301, {
+        Location: seoRedirect,
+        'Cache-Control': 'public, max-age=86400'
+      });
+      response.end();
+      return;
+    }
+
     if (url.pathname === '/sitemap.xml') {
       sendTextResponse(request, response, 200, buildSitemap(), 'application/xml; charset=utf-8', 'public, max-age=3600');
       return;
@@ -4490,6 +4501,127 @@ function isSeoRoute(pathname) {
   return /^\/countries\/[a-z]{2}$/i.test(pathname) || /^\/categories\/[a-z0-9-]+$/i.test(pathname);
 }
 
+function loadSeoImplementationPlan() {
+  if (seoImplementationPlanCache) return seoImplementationPlanCache;
+  try {
+    const file = fs.readFileSync(path.join(rootPath, 'data', 'seo-implementation-plan.json'), 'utf8');
+    const plan = JSON.parse(file);
+    seoImplementationPlanCache = plan && typeof plan === 'object' ? plan : {};
+  } catch (error) {
+    seoImplementationPlanCache = {};
+  }
+  return seoImplementationPlanCache;
+}
+
+function seoPlanStatic(pathname) {
+  return loadSeoImplementationPlan().staticByPath?.[pathname] || null;
+}
+
+function seoPlanCategory(slug) {
+  return loadSeoImplementationPlan().categoryBySlug?.[String(slug || '').toLowerCase()] || null;
+}
+
+function seoPlanCountry(code) {
+  return loadSeoImplementationPlan().countryByCode?.[normalizeCountryCode(code)] || null;
+}
+
+function isSeoNoindexPath(pathname) {
+  return Boolean(loadSeoImplementationPlan().noindexByPath?.[pathname]);
+}
+
+function isSeoRedirectPath(pathname) {
+  return Boolean(seoRedirectTarget(pathname));
+}
+
+function seoRedirectTarget(pathname) {
+  const redirect = (loadSeoImplementationPlan().redirects || []).find((item) => item.path === pathname);
+  if (!redirect) return '';
+  const replacement = String(redirect.replacement || redirect.robotsOrRedirect || '');
+  const fullMatch = replacement.match(/https?:\/\/watchnations\.com(\/[^\s]*)/i);
+  if (fullMatch) return fullMatch[1];
+  if (pathname === '/categories/top-news') return '/categories/news';
+  return '';
+}
+
+function shouldApplyPlanCategory(slug) {
+  const id = String(slug || '').toLowerCase();
+  const critical = loadSeoImplementationPlan().phasePolicy?.criticalCategorySlugs || [];
+  return critical.includes(id);
+}
+
+function shouldApplyPlanCountry(code) {
+  const countryCode = normalizeCountryCode(code);
+  const phaseCodes = loadSeoImplementationPlan().phasePolicy?.phase1CountryCodes || [];
+  const path = `/countries/${countryCode.toLowerCase()}`;
+  return isSeoNoindexPath(path) || phaseCodes.includes(countryCode);
+}
+
+function seoRobotsForPath(pathname) {
+  return isSeoNoindexPath(pathname) ? 'noindex, follow' : 'index, follow, max-image-preview:large';
+}
+
+function indexableSeoCategories() {
+  return SEO_CATEGORIES.filter(([id]) => !isSeoRedirectPath(`/categories/${id}`));
+}
+
+function indexableSeoCountries() {
+  return loadSeoCountries().filter((country) => !isSeoNoindexPath(`/countries/${country.code.toLowerCase()}`));
+}
+
+function parseHeadingOutline(outline = '') {
+  const headings = [];
+  String(outline || '').replace(/<h([123])>([\s\S]*?)<\/h\1>/gi, (_, level, text) => {
+    headings.push({ level: Number(level), text: safeText(text.replace(/<[^>]+>/g, ''), 180) });
+    return '';
+  });
+  return headings.filter((heading) => heading.text);
+}
+
+function h1FromOutline(outline, fallback) {
+  return parseHeadingOutline(outline).find((heading) => heading.level === 1)?.text || fallback;
+}
+
+function outlineBodyHtml(outline, context = {}) {
+  const headings = parseHeadingOutline(outline).filter((heading) => heading.level !== 1);
+  let sectionIndex = 0;
+  return headings.map((heading) => {
+    const text = escapeHtml(heading.text);
+    const id = heading.level === 2 ? ` id="section-${++sectionIndex}"` : '';
+    return `<h${heading.level}${id}>${text}</h${heading.level}>${outlineParagraphForHeading(heading.text, context)}`;
+  }).join('\n');
+}
+
+function outlineParagraphForHeading(heading, context = {}) {
+  const name = escapeHtml(context.name || 'this page');
+  const country = escapeHtml(context.country || context.name || 'this country');
+  const category = escapeHtml(context.category || context.name || 'this category');
+  const counts = [
+    Number(context.tv || 0) > 0 ? `${Number(context.tv)} TV channels` : '',
+    Number(context.radio || 0) > 0 ? `${Number(context.radio)} radio stations` : '',
+    Number(context.newspapers || 0) > 0 ? `${Number(context.newspapers)} newspapers` : '',
+    Number(context.websites || 0) > 0 ? `${Number(context.websites)} useful websites` : ''
+  ].filter(Boolean).join(', ');
+  if (/nearby countries/i.test(heading)) {
+    return `<p>Use nearby country links to continue exploring related regional TV, radio, newspapers, and useful websites.</p>`;
+  }
+  if (/frequently asked questions/i.test(heading)) {
+    return `<p>These answers explain availability, external sources, and how WatchNations organizes media without hosting third-party streams.</p>`;
+  }
+  if (/radio/i.test(heading)) {
+    return `<p>Browse available online radio discovery for ${country}. Radio streams depend on public source availability and may change over time.</p>`;
+  }
+  if (/newspaper|news sources|websites/i.test(heading)) {
+    return `<p>Open verified newspaper, news, and useful website entries when they are available for ${country} or ${category}.</p>`;
+  }
+  if (/country/i.test(heading)) {
+    return `<p>Use country pages to compare local media sources and move from broad discovery to verified regional pages.</p>`;
+  }
+  if (/live tv|channels|broadcasters|movie|music|sports|kids|entertainment|news/i.test(heading)) {
+    return `<p>${counts ? `This section is connected to ${escapeHtml(counts)}.` : `This section organizes available media sources for ${name}.`} Streams remain external and controlled by their providers.</p>`;
+  }
+  return `<p>This section gives visitors a clear path to relevant WatchNations media sources for ${name}.</p>`;
+}
+
 function renderSeoRoute(pathname) {
   if (pathname === '/about') {
     return seoPage({
@@ -4578,8 +4710,8 @@ function renderSeoRoute(pathname) {
 
   return seoPage({
     path: '/',
-    title: 'Watch 500+ World TV Channels Free | WatchNations',
-    description: 'Watch 500+ free live TV channels from 100+ countries. Stream news, sports, movies, music, radio and local TV online with no signup.',
+    title: 'Free Live TV, Radio & World Media | WatchNations',
+    description: 'Explore 10,000+ live TV channels, 50,000+ online radio stations, newspapers, and useful websites from more than 200 countries. Free and no signup.',
     heading: 'Explore Free Live TV, Radio, and World Media',
     body: [
       'WatchNations is a free guide for discovering live TV channels by country, international radio stations, and electronic newspapers from one fast web app.',
@@ -4591,49 +4723,82 @@ function renderSeoRoute(pathname) {
 }
 
 function renderCountriesSeoPage() {
-  const countries = loadSeoCountries();
+  const plan = seoPlanStatic('/countries');
+  const countries = indexableSeoCountries();
   const countryLinks = countries
-    .map((country) => `<li><a href="/countries/${country.code.toLowerCase()}">${escapeHtml(country.name)} live TV channels</a></li>`)
+    .map((country) => `<li><a href="/countries/${country.code.toLowerCase()}">${escapeHtml(country.name)} media guide</a></li>`)
+    .join('');
+  const popular = [
+    ['us', 'United States'],
+    ['gb', 'United Kingdom'],
+    ['fr', 'France'],
+    ['es', 'Spain'],
+    ['ma', 'Morocco'],
+    ['sa', 'Saudi Arabia'],
+    ['in', 'India'],
+    ['br', 'Brazil']
+  ]
+    .filter(([code]) => !isSeoNoindexPath(`/countries/${code}`))
+    .map(([code, name]) => `<h3>${escapeHtml(name)}</h3><p><a href="/countries/${code}">Open ${escapeHtml(name)} TV, radio, newspapers, and websites.</a></p>`)
     .join('');
   return seoPage({
     path: '/countries',
-    title: 'Countries - Watch Free Live TV by Country | WatchNations',
-    description: 'Browse countries on WatchNations to watch TV channels by country, explore an IPTV list by country, and listen to radio stations worldwide.',
-    heading: 'Browse Live TV by Country',
+    title: plan?.title || 'TV, Radio, News & Websites by Country | WatchNations',
+    description: plan?.description || 'Browse live TV channels, online radio stations, newspapers, and useful websites from more than 200 countries on WatchNations.',
+    heading: plan?.h1 || 'Explore TV, Radio, Newspapers, and Websites by Country',
     bodyHtml: `
-      <p>Choose a country to discover free live TV channels, radio stations worldwide, and a global TV channel list free to browse. Each country page links back to the interactive WatchNations app.</p>
-      <h2>Country Pages for Global TV Discovery</h2>
-      <p>This index helps search engines and viewers reach every country page from one stable location. Each page includes local TV discovery, radio, online newspapers, useful categories, and nearby country links.</p>
+      <p>Choose a country to discover live TV channels, online radio stations, newspapers, and useful websites from one stable WatchNations hub.</p>
+      <h2>Browse Media from More Than 200 Countries</h2>
+      <p>This index keeps only indexable country pages in the main country hub and helps visitors move from global discovery to local media sources.</p>
+      <h2>Popular Countries</h2>
+      ${popular}
+      <h2>Explore Countries by Region</h2>
+      <h3>Africa</h3><p>Browse African country pages for TV, radio, newspapers, and useful public sources.</p>
+      <h3>Europe</h3><p>Open European country pages and compare local broadcasters, radio, and news resources.</p>
+      <h3>Asia</h3><p>Explore Asian country media guides with local and international source discovery.</p>
+      <h3>North America</h3><p>Find North American TV, radio, newspapers, and useful websites by country.</p>
+      <h3>South America</h3><p>Browse South American media guides and regional source collections.</p>
+      <h3>Oceania</h3><p>Discover available country media sources across Oceania.</p>
+      <h2>Choose a Country from the Interactive Globe</h2>
+      <p>The WatchNations globe lets visitors start visually, then open the matching country page or media list.</p>
+      <h2>Discover TV, Radio, News, and Websites Worldwide</h2>
       <ul class="country-grid">${countryLinks}</ul>
+      <h2>Frequently Asked Questions</h2>
+      <p>WatchNations country pages are free to browse and link to external sources. The site does not host third-party TV, radio, newspaper, or website content.</p>
     `
   });
 }
 
 function renderCategoriesSeoPage() {
-  const categoryLinks = SEO_CATEGORIES
-    .map(([id, label, summary]) => `<li><a href="/categories/${id}">${escapeHtml(label)} live TV</a><span>${escapeHtml(summary)}</span></li>`)
-    .join('');
-  const priorityLinks = [
-    ['news', 'Live news channels for breaking news and international TV news'],
-    ['sports', 'Live sports TV for football, events, and global sports discovery'],
-    ['kids', 'Kids TV channels for family-safe children programming'],
-    ['documentary', 'Documentary TV channels for science, nature, and culture'],
-    ['business', 'Business TV channels for markets and economy updates'],
-    ['weather', 'Weather TV channels for forecasts and live conditions']
-  ]
-    .map(([id, text]) => `<li><a href="/categories/${id}">${escapeHtml(text)}</a></li>`)
+  const plan = seoPlanStatic('/categories');
+  const categoryLinks = indexableSeoCategories()
+    .map(([id, label, summary]) => `<li><a href="/categories/${id}">${escapeHtml(label)} media category</a><span>${escapeHtml(summary)}</span></li>`)
     .join('');
   return seoPage({
     path: '/categories',
-    title: 'Live TV Categories - WatchNations',
-    description: 'Browse live TV categories on WatchNations: news, sports, kids, movies, music, documentaries, weather, and international channels.',
-    heading: 'Browse Live TV by Category',
+    title: plan?.title || 'Browse TV, Radio & World Media Categories | WatchNations',
+    description: plan?.description || 'Explore live TV, online radio, newspapers, and useful websites by category. Browse news, sports, music, movies, business, kids, and more.',
+    heading: plan?.h1 || 'Browse TV, Radio, and World Media by Category',
     bodyHtml: `
-      <p>WatchNations organizes global live TV channels into categories so users can discover channels by topic, by country, and through random TV channel discovery.</p>
-      <h2>Popular Live TV Categories</h2>
-      <p>Use this page as a clean index for international live TV categories. It helps viewers jump from broad searches such as free live TV channels to focused pages for news, sports, kids, movies, documentaries, music, weather, business, and education.</p>
-      <h3>Featured Category Shortcuts</h3>
-      <ul>${priorityLinks}</ul>
+      <p>WatchNations organizes live TV, online radio, newspapers, and useful websites into clear category paths.</p>
+      <h2>Live TV Categories</h2>
+      <h3>News TV Channels</h3><p><a href="/categories/news">Open live news TV channels</a> for international and local news discovery.</p>
+      <h3>Sports TV Channels</h3><p><a href="/categories/sports">Open sports TV channels</a> and related sports news resources.</p>
+      <h3>Movies and Entertainment</h3><p><a href="/categories/movies">Browse movie TV</a> and <a href="/categories/entertainment">entertainment TV</a> categories.</p>
+      <h3>Kids and Family TV</h3><p><a href="/categories/kids">Browse kids TV</a> and <a href="/categories/family">family TV</a> categories.</p>
+      <h3>Music TV Channels</h3><p><a href="/categories/music">Open music TV channels</a> from countries around the world.</p>
+      <h2>Online Radio Categories</h2>
+      <h3>Music Radio Stations</h3><p>Use country pages and the app radio tab to discover music radio stations.</p>
+      <h3>News and Talk Radio</h3><p>Radio discovery can include news, talk, public radio, and local stations where available.</p>
+      <h3>Local Radio Stations</h3><p>Choose a country to find local radio stations connected to that market.</p>
+      <h2>Newspapers and News Websites</h2>
+      <h3>World News Sources</h3><p>Country pages list available newspapers and useful news sources when verified data exists.</p>
+      <h3>Sports News Websites</h3><p>Sports category pages can connect visitors to sports news and useful sports websites.</p>
+      <h3>Business and Technology News</h3><p>Business and technology sources are organized where the inventory supports them.</p>
+      <h2>Useful Websites by Category</h2>
+      <p>Useful websites are grouped by country and topic so visitors can continue beyond live media into official and informational sources.</p>
+      <h2>Browse Media by Country</h2>
+      <p><a href="/countries">Open the country hub</a> to browse media by country instead of category.</p>
       <ul class="category-grid">${categoryLinks}</ul>
     `
   });
@@ -4652,6 +4817,17 @@ function renderCategorySeoPage(rawCategory) {
   }
 
   const [id, label, summary] = category;
+  const plan = shouldApplyPlanCategory(id) ? seoPlanCategory(id) : null;
+  if (plan) {
+    return seoPage({
+      path: `/categories/${id}`,
+      title: plan.title,
+      description: plan.description,
+      heading: plan.h1 || h1FromOutline(plan.outline, `${label} Live TV Channels`),
+      bodyHtml: categoryPlanBodyHtml(id, label, summary, plan),
+      cta: { href: `/?category=${id}`, label: `Open ${label} Channels` }
+    });
+  }
   const detail = SEO_CATEGORY_DETAILS[id] || {};
   const categoryKeywords = buildCategoryKeywords(id);
   const title = id === 'news'
@@ -4708,7 +4884,7 @@ function categorySeoBody(id, label, summary, detail = {}) {
   const keywords = compactSeoList(detail.keywords || [], 10);
   const countries = compactSeoList(detail.countries || [], 15);
   const languages = compactSeoList(detail.languages || [], 14);
-  const related = SEO_CATEGORIES
+  const related = indexableSeoCategories()
     .filter(([categoryId]) => categoryId !== id)
     .slice(0, 8)
     .map(([categoryId, categoryLabel]) => `<a href="/categories/${escapeHtml(categoryId)}">${escapeHtml(categoryLabel)}</a>`)
@@ -4764,6 +4940,7 @@ function renderCountrySeoPage(rawCode) {
   const code = normalizeCountryCode(rawCode);
   const country = loadSeoCountries().find((item) => item.code === code);
   const countrySeo = loadCountrySeoTexts()[code];
+  const plan = shouldApplyPlanCountry(code) ? seoPlanCountry(code) : null;
   if (!country) {
     return seoPage({
       path: '/countries',
@@ -4771,6 +4948,22 @@ function renderCountrySeoPage(rawCode) {
       description: 'Browse free live TV channels by country on WatchNations.',
       heading: 'Country Not Found',
       body: ['This country is not available yet. Browse the full country list to find available live TV channels.']
+    });
+  }
+
+  if (plan) {
+    const path = `/countries/${code.toLowerCase()}`;
+    const title = plan.title || countrySeoTitle(countrySeo, country);
+    const description = plan.description || countrySeoMetaDescription(countrySeo, country);
+    const heading = plan.h1 || h1FromOutline(plan.outline, safeSeoText(countrySeo?.h1, `${country.name} Media Guide`, 90));
+    return seoPage({
+      path,
+      title,
+      description,
+      heading,
+      bodyHtml: countryPlanBodyHtml(code, country, plan),
+      robots: seoRobotsForPath(path),
+      cta: { href: `/?country=${code}`, label: `Open ${country.name} in WatchNations` }
     });
   }
 
@@ -4784,6 +4977,55 @@ function renderCountrySeoPage(rawCode) {
     newsKeywords: compactSeoList(countrySeo?.keywords || SEO_KEYWORDS, 12),
     cta: { href: `/?country=${code}`, label: `Open ${country.name} in WatchNations` }
   });
+}
+
+function categoryPlanBodyHtml(id, label, summary, plan) {
+  const related = indexableSeoCategories()
+    .filter(([categoryId]) => categoryId !== id)
+    .slice(0, 8)
+    .map(([categoryId, categoryLabel]) => `<a href="/categories/${escapeHtml(categoryId)}">${escapeHtml(categoryLabel)}</a>`)
+    .join('');
+  const context = {
+    name: `${label} category`,
+    category: label,
+    tv: plan.tv,
+    newspapers: plan.newspapers,
+    websites: plan.websites
+  };
+  return `
+      <p>${escapeHtml(plan.description || `Browse ${summary} on WatchNations by country and category.`)}</p>
+      ${outlineBodyHtml(plan.outline, context)}
+      <nav aria-label="Related category pages" class="related-category-links">${related}</nav>
+      <p>Streams and external websites are provided by their original publishers. WatchNations organizes discovery links and does not host third-party media.</p>
+    `;
+}
+
+function countryPlanBodyHtml(code, country, plan) {
+  const nearby = nearbyCountryLinks(code);
+  const categories = countryCategoryLinks(country.name);
+  const inventory = [
+    Number(plan.tv || 0) > 0 ? `${Number(plan.tv)} TV channels` : '',
+    Number(plan.radio || 0) > 0 ? `${Number(plan.radio)} radio stations` : '',
+    Number(plan.newspapers || 0) > 0 ? `${Number(plan.newspapers)} newspapers` : '',
+    Number(plan.websites || 0) > 0 ? `${Number(plan.websites)} useful websites` : ''
+  ].filter(Boolean);
+  const intro = inventory.length
+    ? `WatchNations organizes ${inventory.join(', ')} for ${country.name}. Use this page to browse available media without registration.`
+    : `WatchNations does not currently have enough verified TV, radio, newspaper, or website sources for ${country.name}. This page remains available for users while the inventory improves.`;
+  return `
+      <p>${escapeHtml(intro)}</p>
+      ${outlineBodyHtml(plan.outline, {
+        name: `${country.name} media guide`,
+        country: country.name,
+        tv: plan.tv,
+        radio: plan.radio,
+        newspapers: plan.newspapers,
+        websites: plan.websites
+      })}
+      ${Number(plan.tv || 0) > 0 ? `<nav aria-label="${escapeHtml(country.name)} popular categories" class="related-category-links">${categories}</nav>` : ''}
+      <nav aria-label="Nearby country pages" class="related-category-links">${nearby}</nav>
+      <p>External streams, radio stations, newspapers, and websites are controlled by their original providers. WatchNations does not host or upload third-party content.</p>
+    `;
 }
 
 function countrySeoBody(code, country, countrySeo = null) {
@@ -4918,7 +5160,7 @@ function nearbyCountryLinks(code) {
     GB: ['IE', 'FR', 'DE', 'US', 'CA', 'NL'],
     DE: ['FR', 'NL', 'BE', 'AT', 'CH', 'GB']
   };
-  const countries = loadSeoCountries();
+  const countries = indexableSeoCountries();
   const preferred = countryMap[normalizeCountryCode(code)] || countries
     .map((country) => country.code)
     .filter((countryCode) => countryCode !== normalizeCountryCode(code))
@@ -5045,6 +5287,7 @@ function seoStructuredData({ pathname, title, description, heading, keywords = S
 }
 
 function seoPageType(pathname) {
+  if (isSeoNoindexPath(pathname)) return 'WebPage';
   if (pathname === '/about') return 'AboutPage';
   if (pathname === '/feedback') return 'ContactPage';
   if (pathname === '/countries' || pathname.startsWith('/countries/') || pathname === '/categories' || pathname.startsWith('/categories/')) return 'CollectionPage';
@@ -5053,8 +5296,26 @@ function seoPageType(pathname) {
 
 function seoItemList(pathname, heading) {
   const canonical = `https://watchnations.com${pathname === '/' ? '/' : pathname}`;
+  if (isSeoNoindexPath(pathname)) return null;
   if (pathname.startsWith('/countries/')) {
     const countryCode = normalizeCountryCode(pathname.split('/').pop());
+    const plan = shouldApplyPlanCountry(countryCode) ? seoPlanCountry(countryCode) : null;
+    if (plan) {
+      const sections = parseHeadingOutline(plan.outline)
+        .filter((item) => item.level === 2)
+        .map((item, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: item.text,
+          url: `${canonical}#section-${index + 1}`
+        }));
+      return sections.length ? {
+        '@type': 'ItemList',
+        '@id': `${canonical}#country-sections`,
+        name: `${heading} sections`,
+        itemListElement: sections
+      } : null;
+    }
     const country = loadSeoCountries().find((item) => item.code === countryCode);
     const countrySeo = loadCountrySeoTexts()[countryCode];
     const countryName = country ? country.name : heading;
@@ -5081,7 +5342,7 @@ function seoItemList(pathname, heading) {
   }
 
   if (pathname === '/categories' || pathname.startsWith('/categories/')) {
-    const categories = SEO_CATEGORIES.slice(0, 12);
+    const categories = indexableSeoCategories().slice(0, 12);
     return {
       '@type': 'ItemList',
       '@id': `${canonical}#category-sections`,
@@ -5099,6 +5360,7 @@ function seoItemList(pathname, heading) {
 }
 
 function seoFaqPage(pathname, heading) {
+  if (isSeoNoindexPath(pathname)) return null;
   if (pathname === '/faq') {
     return {
       '@type': 'FAQPage',
@@ -5157,12 +5419,13 @@ function escapeScriptJson(value) {
   return String(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 }
 
-function seoPage({ path: pathname, title, description, heading, body = [], bodyHtml = '', cta, keywords = SEO_KEYWORDS.slice(0, 40), newsKeywords = SEO_KEYWORDS.slice(0, 12) }) {
+function seoPage({ path: pathname, title, description, heading, body = [], bodyHtml = '', cta, keywords = SEO_KEYWORDS.slice(0, 40), robots = seoRobotsForPath(pathname) }) {
   const canonical = `https://watchnations.com${pathname === '/' ? '/' : pathname}`;
   const structuredData = seoStructuredData({ pathname, title, description, heading, keywords });
   const paragraphs = body.map((text) => `<p>${escapeHtml(text)}</p>`).join('');
   const action = cta ? `<p><a class="button" href="${escapeHtml(cta.href)}">${escapeHtml(cta.label)}</a></p>` : '<p><a class="button" href="/">Open WatchNations App</a></p>';
   const internalLinks = '<nav aria-label="Internal links"><a href="/">Home</a><a href="/countries">Countries</a><a href="/categories">Categories</a><a href="/categories/news">Live News</a><a href="/categories/sports">Sports</a><a href="/categories/kids">Kids TV</a><a href="/countries/us">United States TV</a><a href="/countries/sa">Saudi Arabia TV</a><a href="/countries/ma">Morocco TV</a><a href="/countries/es">Spain TV</a><a href="/countries/pt">Portugal TV</a><a href="/countries/fr">France TV</a></nav>';
+  const googlebotRobots = robots.includes('noindex') ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
   return `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
@@ -5170,10 +5433,8 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}">
-  <meta name="keywords" content="${escapeHtml(keywords.join(', '))}">
-  <meta name="news_keywords" content="${escapeHtml(newsKeywords.join(', '))}">
-  <meta name="robots" content="index, follow, max-image-preview:large">
-  <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="robots" content="${escapeHtml(robots)}">
+  <meta name="googlebot" content="${escapeHtml(googlebotRobots)}">
   <meta name="google-site-verification" content="BOGebDfiNtUgDvVuRNuqb7sQb92qcvZ3Y-CkEgRrhKE">
   <link rel="canonical" href="${escapeHtml(canonical)}">
   <link rel="icon" href="/favicon.ico" sizes="any">
@@ -5219,9 +5480,10 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
 
 function buildSitemap() {
   const staticUrls = ['/', '/countries', '/categories', '/about', '/faq', '/privacy-policy', '/feedback'];
-  const countryUrls = loadSeoCountries().map((country) => `/countries/${country.code.toLowerCase()}`);
-  const categoryUrls = SEO_CATEGORIES.map(([id]) => `/categories/${id}`);
+  const countryUrls = indexableSeoCountries().map((country) => `/countries/${country.code.toLowerCase()}`);
+  const categoryUrls = indexableSeoCategories().map(([id]) => `/categories/${id}`);
   const urls = [...staticUrls, ...categoryUrls, ...countryUrls]
+    .filter((pathname) => !isSeoNoindexPath(pathname) && !isSeoRedirectPath(pathname))
     .map((pathname) => `  <url>
     <loc>https://watchnations.com${pathname === '/' ? '/' : pathname}</loc>
     <lastmod>${SEO_LASTMOD}</lastmod>
