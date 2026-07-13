@@ -283,6 +283,17 @@ svg {
   border-bottom: 0;
 }
 
+.nav-section-social {
+  display: grid;
+  gap: 6px;
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+
+.social-link {
+  border-color: rgba(255, 8, 0, 0.28);
+}
+
 .nav-title {
   padding: 8px 18px 7px;
   color: #fff;

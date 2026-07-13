@@ -25,6 +25,10 @@ const RADIO_BROWSER_HOSTS = [
 ];
 const IPTV_API_BASE = 'https://iptv-org.github.io/api';
 const RADIO_USER_AGENT = 'WatchNations/1.0';
+const SOCIAL_LINKS = [
+  ['Facebook', 'https://www.facebook.com/profile.php?id=61591534156330'],
+  ['Instagram', 'https://www.instagram.com/watchnations_tv/']
+];
 const tvCategoryCache = new Map();
 const TV_CATEGORY_CACHE_MS = 15 * 60_000;
 const compressedFileCache = new Map();
@@ -5219,7 +5223,8 @@ function seoStructuredData({ pathname, title, description, heading, keywords = S
         '@type': 'ImageObject',
         url: 'https://watchnations.com/assets/watchnations-tv-logo.png'
       },
-      email: 'lindaraymane@gmail.com'
+      email: 'lindaraymane@gmail.com',
+      sameAs: SOCIAL_LINKS.map(([, href]) => href)
     },
     {
       '@type': 'WebSite',
@@ -5425,6 +5430,7 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   const paragraphs = body.map((text) => `<p>${escapeHtml(text)}</p>`).join('');
   const action = cta ? `<p><a class="button" href="${escapeHtml(cta.href)}">${escapeHtml(cta.label)}</a></p>` : '<p><a class="button" href="/">Open WatchNations App</a></p>';
   const internalLinks = '<nav aria-label="Internal links"><a href="/">Home</a><a href="/countries">Countries</a><a href="/categories">Categories</a><a href="/categories/news">Live News</a><a href="/categories/sports">Sports</a><a href="/categories/kids">Kids TV</a><a href="/countries/us">United States TV</a><a href="/countries/sa">Saudi Arabia TV</a><a href="/countries/ma">Morocco TV</a><a href="/countries/es">Spain TV</a><a href="/countries/pt">Portugal TV</a><a href="/countries/fr">France TV</a></nav>';
+  const socialLinks = `<nav aria-label="Official social links">${SOCIAL_LINKS.map(([label, href]) => `<a href="${escapeHtml(href)}" target="_blank" rel="me noopener noreferrer">${escapeHtml(label)}</a>`).join('')}</nav>`;
   const googlebotRobots = robots.includes('noindex') ? 'noindex, follow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
   return `<!doctype html>
 <html lang="en" dir="ltr">
@@ -5473,7 +5479,7 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
     ${action}
     ${internalLinks}
   </main>
-  <footer>WatchNations does not host video streams. It organizes publicly available external links in good faith.</footer>
+  <footer>WatchNations does not host video streams. It organizes publicly available external links in good faith.${socialLinks}</footer>
 </body>
 </html>`;
 }

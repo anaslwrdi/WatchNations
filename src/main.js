@@ -195,6 +195,11 @@ const footerNavItems = [
   ['feedback', 'Feedback', 'message']
 ];
 
+const socialLinks = [
+  ['Facebook', 'https://www.facebook.com/profile.php?id=61591534156330'],
+  ['Instagram', 'https://www.instagram.com/watchnations_tv/']
+];
+
 const supportedLanguages = [
   ['en', 'English'],
   ['es', 'Español'],
@@ -1423,6 +1428,10 @@ document.getElementById('root').innerHTML = `
       </div>
       <div class="nav-section nav-section-footer">
         ${footerNavItems.map(([action, label, icon]) => `<a class="nav-link" data-action="${action}">${icons[icon]} <span>${t(action)}</span></a>`).join('')}
+      </div>
+      <div class="nav-title">Social</div>
+      <div class="nav-section nav-section-social">
+        ${socialLinks.map(([label, href]) => `<a class="nav-link social-link" href="${href}" target="_blank" rel="me noopener noreferrer"><span>${label}</span></a>`).join('')}
       </div>
     </aside>
 
