@@ -1680,6 +1680,12 @@ svg {
     min-height: 430px;
   }
 
+  .globe-label {
+    max-width: calc(100% - 32px);
+    transform: translate(-50%, -48px);
+    text-align: center;
+  }
+
   .globe-controls {
     top: 82px;
     right: 12px;

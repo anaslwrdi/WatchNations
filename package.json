@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node server.cjs",
-    "dev": "node server.cjs"
+    "dev": "node server.cjs",
+    "test": "node scripts/maintenance-check.cjs"
   },
   "engines": {
     "node": ">=18"

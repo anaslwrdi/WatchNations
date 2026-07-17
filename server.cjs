@@ -36,7 +36,7 @@ const EXTERNAL_JSON_CACHE_MS = 6 * 60 * 60_000;
 const compressedFileCache = new Map();
 let countrySeoTextsCache = null;
 let seoImplementationPlanCache = null;
-const SEO_LASTMOD = '2026-07-13';
+const SEO_LASTMOD = '2026-07-17';
 const SEO_ROUTES = new Set(['/about', '/faq', '/privacy-policy', '/feedback', '/countries']);
 const SEO_CATEGORIES = [
   ['all', 'All Channels', 'free live TV channels from all countries'],
@@ -4360,6 +4360,11 @@ const server = http.createServer((request, response) => {
       return;
     }
 
+    if (url.pathname === '/' && url.search) {
+      sendNoindexAppShell(request, response);
+      return;
+    }
+
     if (isSeoRoute(url.pathname)) {
       sendTextResponse(request, response, 200, renderSeoRoute(url.pathname), 'text/html; charset=utf-8', 'no-cache, max-age=0, must-revalidate');
       return;
@@ -4450,7 +4455,8 @@ function sendStaticFile(request, response, filePath) {
 
 function sendTextResponse(request, response, status, text, contentType, cacheControl) {
   const data = Buffer.from(text, 'utf8');
-  const etag = `"${data.length.toString(16)}-${Buffer.from(text).subarray(0, 32).toString('hex')}"`;
+  const digest = crypto.createHash('sha256').update(data).digest('base64url').slice(0, 24);
+  const etag = `"${data.length.toString(16)}-${digest}"`;
   if (request.headers['if-none-match'] === etag) {
     response.writeHead(304, {
       'ETag': etag,
@@ -4470,6 +4476,23 @@ function sendTextResponse(request, response, status, text, contentType, cacheCon
   if (encoded.encoding) headers['Content-Encoding'] = encoded.encoding;
   response.writeHead(status, headers);
   response.end(request.method === 'HEAD' ? undefined : encoded.body);
+}
+
+function sendNoindexAppShell(request, response) {
+  fs.readFile(path.join(rootPath, 'index.html'), 'utf8', (error, html) => {
+    if (error) {
+      response.writeHead(500);
+      response.end('Unable to load application');
+      return;
+    }
+
+    const noindexHtml = html
+      .replace('<meta name="robots" content="index, follow, max-image-preview:large" />', '<meta name="robots" content="noindex, follow" />')
+      .replace('<meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />', '<meta name="googlebot" content="noindex, follow" />')
+      .replace('<meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />', '<meta name="bingbot" content="noindex, follow" />');
+
+    sendTextResponse(request, response, 200, noindexHtml, 'text/html; charset=utf-8', 'no-cache, max-age=0, must-revalidate');
+  });
 }
 
 function compressStaticBody(request, filePath, data, etag) {
