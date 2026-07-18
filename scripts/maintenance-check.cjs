@@ -52,6 +52,8 @@ async function auditSitemap(acceptEncoding) {
       assert(extract(html, /<title>([^<]+)<\/title>/i), `${pathname} is missing a title`);
       assert(extract(html, /<meta name="description" content="([^"]+)/i), `${pathname} is missing a description`);
       assert(extract(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i), `${pathname} is missing an H1`);
+      assert(html.includes("'GTM-NRL24HGJ'"), `${pathname} is missing the Google Tag Manager head script`);
+      assert(html.includes('ns.html?id=GTM-NRL24HGJ'), `${pathname} is missing the Google Tag Manager noscript fallback`);
       assert(!extract(html, /<meta name="robots" content="([^"]+)/i).includes('noindex'), `${pathname} is noindex but present in the sitemap`);
       const canonical = extract(html, /<link rel="canonical" href="([^"]+)/i);
       assert(canonical === `${productionUrl}${pathname}`, `${pathname} has incorrect canonical ${canonical}`);
@@ -68,6 +70,9 @@ async function run() {
   const homeHtml = await homeResponse.text();
   const contentSecurityPolicy = homeResponse.headers.get('content-security-policy') || '';
   assert(homeResponse.status === 200, 'Homepage is unavailable');
+  assert(homeHtml.includes("'GTM-NRL24HGJ'"), 'Homepage Google Tag Manager head script is missing');
+  assert(homeHtml.includes('ns.html?id=GTM-NRL24HGJ'), 'Homepage Google Tag Manager noscript fallback is missing');
+  assert(homeHtml.indexOf('GTM-NRL24HGJ') < homeHtml.indexOf('<meta charset='), 'Google Tag Manager must remain at the top of the head');
   assert(homeHtml.includes('__watchnationsLoadAds'), 'Clickadilla bootstrap code is missing');
   assert(homeHtml.includes('js.wpadmngr.com'), 'Clickadilla ad manager source is missing');
   assert(contentSecurityPolicy.includes("script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:"), 'Content Security Policy may block the ad script');
@@ -93,7 +98,7 @@ async function run() {
   const missingResponse = await fetch(`${baseUrl}/not-a-real-page`);
   assert(missingResponse.status === 404, `Unknown paths must return 404, received ${missingResponse.status}`);
 
-  console.log('Maintenance checks passed: 240 sitemap pages, compression, canonicals, query noindex, and 404 handling.');
+  console.log('Maintenance checks passed: 240 sitemap pages, GTM, ads, compression, canonicals, query noindex, assets, and 404 handling.');
 }
 
 run()

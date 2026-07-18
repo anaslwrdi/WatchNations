@@ -5460,6 +5460,13 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   return `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-NRL24HGJ');</script>
+  <!-- End Google Tag Manager -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
@@ -5497,6 +5504,10 @@ function seoPage({ path: pathname, title, description, heading, body = [], bodyH
   </style>
 </head>
 <body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NRL24HGJ"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
   <header><a href="/"><img src="/assets/watchnations-tv-logo.png" alt="WatchNations logo"></a><div><div class="brand"><span>Watch</span>Nations</div><nav><a href="/">App</a><a href="/countries">Countries</a><a href="/categories">Categories</a><a href="/about">About</a><a href="/faq">FAQ</a><a href="/privacy-policy">Privacy</a><a href="/feedback">Feedback</a></nav></div></header>
   <main>
     <h1>${escapeHtml(heading)}</h1>
