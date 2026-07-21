@@ -52,6 +52,8 @@ async function auditSitemap(acceptEncoding) {
       assert(extract(html, /<title>([^<]+)<\/title>/i), `${pathname} is missing a title`);
       assert(extract(html, /<meta name="description" content="([^"]+)/i), `${pathname} is missing a description`);
       assert(extract(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i), `${pathname} is missing an H1`);
+      assert(html.split('gtag/js?id=G-GSTBY7DVHJ').length - 1 === 1, `${pathname} must contain exactly one Google Analytics tag`);
+      assert(html.split("gtag('config', 'G-GSTBY7DVHJ')").length - 1 === 1, `${pathname} must configure Google Analytics exactly once`);
       assert(html.includes("'GTM-NRL24HGJ'"), `${pathname} is missing the Google Tag Manager head script`);
       assert(html.includes('ns.html?id=GTM-NRL24HGJ'), `${pathname} is missing the Google Tag Manager noscript fallback`);
       assert(!extract(html, /<meta name="robots" content="([^"]+)/i).includes('noindex'), `${pathname} is noindex but present in the sitemap`);
@@ -70,6 +72,9 @@ async function run() {
   const homeHtml = await homeResponse.text();
   const contentSecurityPolicy = homeResponse.headers.get('content-security-policy') || '';
   assert(homeResponse.status === 200, 'Homepage is unavailable');
+  assert(homeHtml.split('gtag/js?id=G-GSTBY7DVHJ').length - 1 === 1, 'Homepage must contain exactly one Google Analytics tag');
+  assert(homeHtml.split("gtag('config', 'G-GSTBY7DVHJ')").length - 1 === 1, 'Homepage must configure Google Analytics exactly once');
+  assert(homeHtml.indexOf('G-GSTBY7DVHJ') < homeHtml.indexOf('GTM-NRL24HGJ'), 'Google Analytics must remain immediately after the head element');
   assert(homeHtml.includes("'GTM-NRL24HGJ'"), 'Homepage Google Tag Manager head script is missing');
   assert(homeHtml.includes('ns.html?id=GTM-NRL24HGJ'), 'Homepage Google Tag Manager noscript fallback is missing');
   assert(homeHtml.indexOf('GTM-NRL24HGJ') < homeHtml.indexOf('<meta charset='), 'Google Tag Manager must remain at the top of the head');
@@ -98,7 +103,7 @@ async function run() {
   const missingResponse = await fetch(`${baseUrl}/not-a-real-page`);
   assert(missingResponse.status === 404, `Unknown paths must return 404, received ${missingResponse.status}`);
 
-  console.log('Maintenance checks passed: 240 sitemap pages, GTM, ads, compression, canonicals, query noindex, assets, and 404 handling.');
+  console.log('Maintenance checks passed: 240 sitemap pages, GA4, GTM, ads, compression, canonicals, query noindex, assets, and 404 handling.');
 }
 
 run()
