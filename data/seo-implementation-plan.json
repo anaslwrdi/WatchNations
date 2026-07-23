@@ -17,6 +17,12 @@
       "kids",
       "entertainment"
     ],
+    "gscRecoveryCategorySlugs": [
+      "education",
+      "auto",
+      "travel",
+      "business"
+    ],
     "phase1CountryCodes": [
       "FR",
       "US",
@@ -27,6 +33,13 @@
       "DE",
       "BR",
       "EG"
+    ],
+    "gscRecoveryCountryCodes": [
+      "AO",
+      "SR",
+      "AS",
+      "CD",
+      "YE"
     ]
   },
   "staticByPath": {

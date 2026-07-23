@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 const port = 5197;
 const baseUrl = `http://127.0.0.1:${port}`;
 const productionUrl = 'https://watchnations.com';
+const seoPlan = require('../data/seo-implementation-plan.json');
 const server = spawn(process.execPath, ['server.cjs'], {
   cwd: process.cwd(),
   env: { ...process.env, PORT: String(port), HOST: '127.0.0.1' },
@@ -35,6 +36,42 @@ function extract(html, pattern) {
   return html.match(pattern)?.[1] || '';
 }
 
+function normalizeVisibleText(value) {
+  return String(value || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function validateStructuredData(html, pathname, canonical) {
+  const pageText = normalizeVisibleText(html);
+  const blocks = [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)];
+  assert(blocks.length > 0, `${pathname} is missing JSON-LD`);
+
+  for (const block of blocks) {
+    const data = JSON.parse(block[1]);
+    const graph = Array.isArray(data['@graph']) ? data['@graph'] : [data];
+    assert(!block[1].includes('"@type":"SearchAction"'), `${pathname} must not advertise a placeholder SearchAction URL`);
+
+    const pageNode = graph.find((item) => ['WebPage', 'CollectionPage', 'AboutPage', 'ContactPage'].includes(item['@type']));
+    assert(pageNode?.url === canonical, `${pathname} schema URL must match its canonical`);
+
+    for (const faq of graph.filter((item) => item['@type'] === 'FAQPage')) {
+      for (const question of faq.mainEntity || []) {
+        const answer = question.acceptedAnswer?.text || '';
+        assert(pageText.includes(normalizeVisibleText(question.name)), `${pathname} FAQ schema question is not visible`);
+        assert(pageText.includes(normalizeVisibleText(answer)), `${pathname} FAQ schema answer is not visible`);
+      }
+    }
+  }
+}
+
 async function auditSitemap(acceptEncoding) {
   const headers = { 'accept-encoding': acceptEncoding };
   const sitemapResponse = await fetch(`${baseUrl}/sitemap.xml`, { headers });
@@ -59,6 +96,9 @@ async function auditSitemap(acceptEncoding) {
       assert(!extract(html, /<meta name="robots" content="([^"]+)/i).includes('noindex'), `${pathname} is noindex but present in the sitemap`);
       const canonical = extract(html, /<link rel="canonical" href="([^"]+)/i);
       assert(canonical === `${productionUrl}${pathname}`, `${pathname} has incorrect canonical ${canonical}`);
+      assert(!html.includes('href="/?country='), `${pathname} exposes a query-based country link`);
+      assert(!html.includes('href="/?category='), `${pathname} exposes a query-based category link`);
+      validateStructuredData(html, pathname, canonical);
     }));
   }
 }
@@ -81,6 +121,8 @@ async function run() {
   assert(homeHtml.includes('__watchnationsLoadAds'), 'Clickadilla bootstrap code is missing');
   assert(homeHtml.includes('js.wpadmngr.com'), 'Clickadilla ad manager source is missing');
   assert(contentSecurityPolicy.includes("script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http:"), 'Content Security Policy may block the ad script');
+  assert(extract(homeHtml, /<title>([^<]+)<\/title>/i) === 'Free Live TV, Radio & World Media | WatchNations', 'Homepage title must remain unchanged');
+  assert(normalizeVisibleText(extract(homeHtml, /<h1[^>]*>([\s\S]*?)<\/h1>/i)) === 'explore free live tv, radio, and world media', 'Homepage H1 must remain unchanged');
 
   const stylesheetPath = extract(homeHtml, /<link rel="stylesheet" href="([^\"]+)/i);
   const modulePath = extract(homeHtml, /<script[^>]+type="module" src="([^\"]+)/i);
@@ -99,11 +141,31 @@ async function run() {
   assert(queryResponse.status === 200, 'Country app deep link is unavailable');
   assert(extract(queryHtml, /<meta name="robots" content="([^"]+)/i) === 'noindex, follow', 'Query app pages must be noindex');
   assert(extract(queryHtml, /<link rel="canonical" href="([^"]+)/i) === `${productionUrl}/`, 'Query app pages must canonicalize to the homepage');
+  assert(queryResponse.headers.get('x-robots-tag') === 'noindex, follow', 'Query app pages must send an X-Robots-Tag noindex header');
+
+  for (const code of seoPlan.phasePolicy.gscRecoveryCountryCodes || []) {
+    const plan = seoPlan.countryByCode[code];
+    const response = await fetch(`${baseUrl}/countries/${code.toLowerCase()}`);
+    const html = await response.text();
+    assert(extract(html, /<title>([^<]+)<\/title>/i) === plan.title, `${code} must use the verified recovery title`);
+    assert(normalizeVisibleText(extract(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i)) === normalizeVisibleText(plan.h1), `${code} must use the verified recovery H1`);
+    assert(!html.includes('"@type":"FAQPage"'), `${code} must not emit FAQ schema without complete visible answers`);
+    assert(html.includes(`href="/#country=${code}"`), `${code} must open the app through a fragment URL`);
+  }
+
+  for (const slug of seoPlan.phasePolicy.gscRecoveryCategorySlugs || []) {
+    const plan = seoPlan.categoryBySlug[slug];
+    const response = await fetch(`${baseUrl}/categories/${slug}`);
+    const html = await response.text();
+    assert(extract(html, /<title>([^<]+)<\/title>/i) === plan.title, `${slug} must use the verified recovery title`);
+    assert(normalizeVisibleText(extract(html, /<h1[^>]*>([\s\S]*?)<\/h1>/i)) === normalizeVisibleText(plan.h1), `${slug} must use the verified recovery H1`);
+    assert(html.includes(`href="/#category=${slug}"`), `${slug} must open the app through a fragment URL`);
+  }
 
   const missingResponse = await fetch(`${baseUrl}/not-a-real-page`);
   assert(missingResponse.status === 404, `Unknown paths must return 404, received ${missingResponse.status}`);
 
-  console.log('Maintenance checks passed: 240 sitemap pages, GA4, GTM, ads, compression, canonicals, query noindex, assets, and 404 handling.');
+  console.log('Maintenance checks passed: 240 sitemap pages, visible schema, GSC recovery pages, GA4, GTM, ads, canonicals, noindex, assets, and 404 handling.');
 }
 
 run()

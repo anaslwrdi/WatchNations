@@ -2098,12 +2098,14 @@ async function loadCountries() {
     rebuildCountryLookup();
     appState.availableCountryCodes = new Set(appState.countries.map((country) => country.code));
     renderCountries();
-    const initialCountryCode = normalizeCountryCode(new URLSearchParams(window.location.search).get('country'));
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const initialCountryCode = normalizeCountryCode(hashParams.get('country') || searchParams.get('country'));
     if (initialCountryCode && isAvailableCountryCode(initialCountryCode)) {
       selectCountryByCode(initialCountryCode, { keepPicker: false, source: 'url', silent: true });
       return;
     }
-    const initialCategory = normalize(new URLSearchParams(window.location.search).get('category')).replace(/\s+/g, '-');
+    const initialCategory = normalize(hashParams.get('category') || searchParams.get('category')).replace(/\s+/g, '-');
     if (initialCategory && categoryIds.has(initialCategory)) {
       handleCategoryNavigation(initialCategory).catch(() => {});
       return;

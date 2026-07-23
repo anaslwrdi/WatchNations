@@ -36,7 +36,7 @@ const EXTERNAL_JSON_CACHE_MS = 6 * 60 * 60_000;
 const compressedFileCache = new Map();
 let countrySeoTextsCache = null;
 let seoImplementationPlanCache = null;
-const SEO_LASTMOD = '2026-07-17';
+const SEO_LASTMOD = '2026-07-23';
 const SEO_ROUTES = new Set(['/about', '/faq', '/privacy-policy', '/feedback', '/countries']);
 const SEO_CATEGORIES = [
   ['all', 'All Channels', 'free live TV channels from all countries'],
@@ -4491,6 +4491,7 @@ function sendNoindexAppShell(request, response) {
       .replace('<meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />', '<meta name="googlebot" content="noindex, follow" />')
       .replace('<meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />', '<meta name="bingbot" content="noindex, follow" />');
 
+    response.setHeader('X-Robots-Tag', 'noindex, follow');
     sendTextResponse(request, response, 200, noindexHtml, 'text/html; charset=utf-8', 'no-cache, max-age=0, must-revalidate');
   });
 }
@@ -4574,13 +4575,21 @@ function seoRedirectTarget(pathname) {
 
 function shouldApplyPlanCategory(slug) {
   const id = String(slug || '').toLowerCase();
-  const critical = loadSeoImplementationPlan().phasePolicy?.criticalCategorySlugs || [];
-  return critical.includes(id);
+  const policy = loadSeoImplementationPlan().phasePolicy || {};
+  const planned = [
+    ...(policy.criticalCategorySlugs || []),
+    ...(policy.gscRecoveryCategorySlugs || [])
+  ];
+  return planned.includes(id);
 }
 
 function shouldApplyPlanCountry(code) {
   const countryCode = normalizeCountryCode(code);
-  const phaseCodes = loadSeoImplementationPlan().phasePolicy?.phase1CountryCodes || [];
+  const policy = loadSeoImplementationPlan().phasePolicy || {};
+  const phaseCodes = [
+    ...(policy.phase1CountryCodes || []),
+    ...(policy.gscRecoveryCountryCodes || [])
+  ];
   const path = `/countries/${countryCode.toLowerCase()}`;
   return isSeoNoindexPath(path) || phaseCodes.includes(countryCode);
 }
@@ -4854,7 +4863,7 @@ function renderCategorySeoPage(rawCategory) {
       description: plan.description,
       heading: plan.h1 || h1FromOutline(plan.outline, `${label} Live TV Channels`),
       bodyHtml: categoryPlanBodyHtml(id, label, summary, plan),
-      cta: { href: `/?category=${id}`, label: `Open ${label} Channels` }
+      cta: { href: `/#category=${id}`, label: `Open ${label} Channels` }
     });
   }
   const detail = SEO_CATEGORY_DETAILS[id] || {};
@@ -4873,7 +4882,7 @@ function renderCategorySeoPage(rawCategory) {
     bodyHtml: categorySeoBody(id, label, summary, detail),
     keywords: categoryKeywords,
     newsKeywords: categoryKeywords.slice(0, 48),
-    cta: { href: `/?category=${id}`, label: `Open ${label} Channels` }
+    cta: { href: `/#category=${id}`, label: `Open ${label} Channels` }
   });
 }
 
@@ -4992,7 +5001,7 @@ function renderCountrySeoPage(rawCode) {
       heading,
       bodyHtml: countryPlanBodyHtml(code, country, plan),
       robots: seoRobotsForPath(path),
-      cta: { href: `/?country=${code}`, label: `Open ${country.name} in WatchNations` }
+      cta: { href: `/#country=${code}`, label: `Open ${country.name} in WatchNations` }
     });
   }
 
@@ -5004,7 +5013,7 @@ function renderCountrySeoPage(rawCode) {
     bodyHtml: countrySeoBody(code, country, countrySeo),
     keywords: countryPageKeywords(countrySeo, country),
     newsKeywords: compactSeoList(countrySeo?.keywords || SEO_KEYWORDS, 12),
-    cta: { href: `/?country=${code}`, label: `Open ${country.name} in WatchNations` }
+    cta: { href: `/#country=${code}`, label: `Open ${country.name} in WatchNations` }
   });
 }
 
@@ -5257,12 +5266,7 @@ function seoStructuredData({ pathname, title, description, heading, keywords = S
       name: 'WatchNations',
       url: 'https://watchnations.com/',
       publisher: { '@id': 'https://watchnations.com/#organization' },
-      inLanguage: ['en', 'ar', 'es', 'fr', 'it', 'pt', 'bn', 'tr', 'ja', 'de', 'nl', 'sv', 'no', 'zh'],
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: 'https://watchnations.com/?q={search_term_string}',
-        'query-input': 'required name=search_term_string'
-      }
+      inLanguage: ['en', 'ar', 'es', 'fr', 'it', 'pt', 'bn', 'tr', 'ja', 'de', 'nl', 'sv', 'no', 'zh']
     },
     {
       '@type': pageType,
@@ -5406,6 +5410,7 @@ function seoFaqPage(pathname, heading) {
 
   if (pathname.startsWith('/countries/')) {
     const countryCode = normalizeCountryCode(pathname.split('/').pop());
+    if (shouldApplyPlanCountry(countryCode)) return null;
     const country = loadSeoCountries().find((item) => item.code === countryCode);
     const countrySeo = loadCountrySeoTexts()[countryCode];
     const countryName = country ? country.name : heading.replace(/^Watch\s+|\s+TV Channels.*$/g, '');
