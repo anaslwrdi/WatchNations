@@ -78,7 +78,7 @@ async function auditSitemap(acceptEncoding) {
   assert(sitemapResponse.status === 200, `Sitemap returned ${sitemapResponse.status}`);
   const sitemap = await sitemapResponse.text();
   const paths = [...sitemap.matchAll(/<loc>https:\/\/watchnations\.com([^<]*)<\/loc>/g)].map((match) => match[1]);
-  assert(paths.length === 240, `Expected 240 sitemap URLs, received ${paths.length}`);
+  assert(paths.length >= 280, `Expected at least 280 sitemap URLs, received ${paths.length}`);
   assert(new Set(paths).size === paths.length, 'Sitemap contains duplicate URLs');
 
   for (let index = 0; index < paths.length; index += 20) {
@@ -136,12 +136,9 @@ async function run() {
   assert((stylesheetResponse.headers.get('cache-control') || '').includes('immutable'), 'Stylesheet is missing immutable caching');
   assert((moduleResponse.headers.get('cache-control') || '').includes('immutable'), 'Module script is missing immutable caching');
 
-  const queryResponse = await fetch(`${baseUrl}/?country=MA`);
-  const queryHtml = await queryResponse.text();
-  assert(queryResponse.status === 200, 'Country app deep link is unavailable');
-  assert(extract(queryHtml, /<meta name="robots" content="([^"]+)/i) === 'noindex, follow', 'Query app pages must be noindex');
-  assert(extract(queryHtml, /<link rel="canonical" href="([^"]+)/i) === `${productionUrl}/`, 'Query app pages must canonicalize to the homepage');
-  assert(queryResponse.headers.get('x-robots-tag') === 'noindex, follow', 'Query app pages must send an X-Robots-Tag noindex header');
+  const queryResponse = await fetch(`${baseUrl}/?country=MA`, { redirect: 'manual' });
+  assert(queryResponse.status === 301, `Country query URLs must redirect to clean country pages, received ${queryResponse.status}`);
+  assert(queryResponse.headers.get('location') === '/countries/ma', 'Country query URLs must redirect to the matching country SEO page');
 
   for (const code of seoPlan.phasePolicy.gscRecoveryCountryCodes || []) {
     const plan = seoPlan.countryByCode[code];
@@ -165,7 +162,7 @@ async function run() {
   const missingResponse = await fetch(`${baseUrl}/not-a-real-page`);
   assert(missingResponse.status === 404, `Unknown paths must return 404, received ${missingResponse.status}`);
 
-  console.log('Maintenance checks passed: 240 sitemap pages, visible schema, GSC recovery pages, GA4, GTM, ads, canonicals, noindex, assets, and 404 handling.');
+  console.log('Maintenance checks passed: expanded sitemap pages, visible schema, GSC recovery pages, GA4, GTM, ads, canonicals, query redirects, assets, and 404 handling.');
 }
 
 run()

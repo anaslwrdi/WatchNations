@@ -4360,6 +4360,17 @@ const server = http.createServer((request, response) => {
       return;
     }
 
+    if (url.pathname === '/' && url.searchParams.has('country')) {
+      const countryCode = normalizeCountryCode(url.searchParams.get('country'));
+      const countryExists = loadSeoCountries().some((country) => country.code === countryCode);
+      response.writeHead(301, {
+        Location: countryExists ? `/countries/${countryCode.toLowerCase()}` : '/',
+        'Cache-Control': 'public, max-age=86400'
+      });
+      response.end();
+      return;
+    }
+
     if (url.pathname === '/' && url.search) {
       sendNoindexAppShell(request, response);
       return;
@@ -4556,7 +4567,14 @@ function seoPlanCountry(code) {
 }
 
 function isSeoNoindexPath(pathname) {
+  if (isPublicSeoIndexablePath(pathname)) return false;
   return Boolean(loadSeoImplementationPlan().noindexByPath?.[pathname]);
+}
+
+function isPublicSeoIndexablePath(pathname) {
+  if (SEO_ROUTES.has(pathname)) return true;
+  if (pathname === '/categories') return true;
+  return /^\/countries\/[a-z]{2}$/i.test(pathname) || /^\/categories\/[a-z0-9-]+$/i.test(pathname);
 }
 
 function isSeoRedirectPath(pathname) {
@@ -4603,7 +4621,7 @@ function indexableSeoCategories() {
 }
 
 function indexableSeoCountries() {
-  return loadSeoCountries().filter((country) => !isSeoNoindexPath(`/countries/${country.code.toLowerCase()}`));
+  return loadSeoCountries();
 }
 
 function parseHeadingOutline(outline = '') {
